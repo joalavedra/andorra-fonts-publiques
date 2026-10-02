@@ -1,0 +1,1 @@
+"""Cited, source-grounded assistant."""
