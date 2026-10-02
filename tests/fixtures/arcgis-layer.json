@@ -1,0 +1,8 @@
+{
+  "fields": [
+    {
+      "name": "last_update",
+      "type": "esriFieldTypeDate"
+    }
+  ]
+}
