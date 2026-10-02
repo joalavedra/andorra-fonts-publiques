@@ -1,0 +1,36 @@
+id: afa-feeds
+name: Andorran Financial Authority feeds
+org: Autoritat Financera Andorrana
+sector: finance
+tags: [finance, regulation, alerts, rss, atom]
+summary: Main and category RSS or Atom feeds for alerts, press releases, new regulation and financial education.
+alerts: []
+access: [feed]
+auth: none
+formats: [rss, atom, xml]
+update: live
+coverage: AFA alerts, press releases, new regulation and financial-education feed items.
+license: Feed redistribution terms were not checked; use for live retrieval and link to the original item.
+license_url: null
+base_url: https://www.afa.ad
+docs_url: https://www.afa.ad/RSS
+endpoints:
+  - path: /RSS
+    method: GET
+    desc: Retrieve the AFA main RSS feed.
+    example: 'curl -sS "https://www.afa.ad/RSS"'
+    returns: RSS or Atom XML feed with financial regulator item metadata.
+  - path: /ca/categories-home/{category}/RSS
+    method: GET
+    desc: Retrieve a category feed for alerts, press releases, new regulation or financial education.
+    example: 'curl -sS "https://www.afa.ad/ca/categories-home/alertes/RSS"'
+    returns: RSS or Atom XML containing items for the selected AFA category.
+quirks: [feed-xml]
+gotchas:
+  - AFA Plone REST API search requires a permission that anonymous users do not have; use public XML feeds instead.
+  - The /ca/categories-home/educacio-financiera/RSS request timed out at 30 seconds on 2026-10-02; one unavailable category can make aggregation partial.
+tips:
+  - Prefer category feeds when available to monitor regulation, alerts and financial education separately.
+related: [consell-general-feeds]
+status: active
+verified: "2026-10-02"

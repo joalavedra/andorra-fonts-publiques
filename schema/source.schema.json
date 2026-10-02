@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Andorra public source record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id", "name", "org", "sector", "tags", "summary", "alerts", "access",
+    "auth", "formats", "update", "coverage", "license", "license_url",
+    "base_url", "docs_url", "endpoints", "quirks", "gotchas", "tips",
+    "related", "status", "verified"
+  ],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "description": "Stable kebab-case identifier matching the filename."},
+    "name": {"type": "string", "minLength": 1, "maxLength": 100},
+    "org": {"type": "string", "minLength": 1},
+    "sector": {"type": "string", "description": "Closed vocabulary value from schema/vocab.yaml."},
+    "tags": {"type": "array", "items": {"type": "string"}, "maxItems": 12, "uniqueItems": true},
+    "summary": {"type": "string", "minLength": 1, "maxLength": 400},
+    "alerts": {"type": "array", "items": {"type": "string", "maxLength": 260}, "maxItems": 3},
+    "access": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+    "auth": {"type": "string"},
+    "formats": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+    "update": {"type": "string"},
+    "coverage": {"type": "string"},
+    "license": {"type": "string", "minLength": 1},
+    "license_url": {"type": ["string", "null"], "format": "uri"},
+    "base_url": {"type": "string", "format": "uri"},
+    "docs_url": {"type": ["string", "null"], "format": "uri"},
+    "endpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "method", "desc", "example", "returns"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "method": {"type": "string", "enum": ["GET", "POST"]},
+          "desc": {"type": "string", "minLength": 1, "maxLength": 200},
+          "example": {"type": "string", "minLength": 1, "maxLength": 700},
+          "returns": {"type": "string", "minLength": 1, "maxLength": 400}
+        }
+      }
+    },
+    "quirks": {"type": "array", "items": {"type": "string"}, "maxItems": 12, "uniqueItems": true},
+    "gotchas": {"type": "array", "items": {"type": "string", "maxLength": 260}, "maxItems": 12},
+    "tips": {"type": "array", "items": {"type": "string", "maxLength": 260}, "maxItems": 6},
+    "related": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "status": {"type": "string"},
+    "verified": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}
+  }
+}

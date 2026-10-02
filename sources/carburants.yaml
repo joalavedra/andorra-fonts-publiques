@@ -1,0 +1,35 @@
+id: carburants
+name: Fuel stations and reference prices
+org: Govern d'Andorra
+sector: energy
+tags: [fuel, petrol-stations, prices, arcgis]
+summary: ArcGIS layers for 75 fuel stations and 275 current reference-price records.
+alerts: []
+access: [arcgis-rest]
+auth: none
+formats: [arcgis-json, geojson]
+update: live
+coverage: Andorra; current station and reference-price records.
+license: All rights reserved under Govern d'Andorra terms; this project fetches the layers live and cites links without redistributing their content.
+license_url: https://www.govern.ad/
+base_url: https://sig.govern.ad/server/rest/services/CARBURANTS/CARBURANTS/FeatureServer
+docs_url: https://sig.govern.ad/portal
+endpoints:
+  - path: /0/query
+    method: GET
+    desc: Query the 75 fuel station locations.
+    example: 'curl -sS "https://sig.govern.ad/server/rest/services/CARBURANTS/CARBURANTS/FeatureServer/0/query?where=1%3D1&outFields=*&f=json"'
+    returns: ArcGIS feature set with station attributes and geometry; checked layer count is 75.
+  - path: /1/query
+    method: GET
+    desc: Query the current reference-price records.
+    example: 'curl -sS "https://sig.govern.ad/server/rest/services/CARBURANTS/CARBURANTS/FeatureServer/1/query?where=1%3D1&outFields=*&f=json"'
+    returns: ArcGIS feature set with 275 current fuel reference-price records, checked on 2026-10-02.
+quirks: [arcgis-layer-index, arcgis-paging]
+gotchas:
+  - The service exposes stations and reference prices as separate layers; query layer 0 or 1 explicitly.
+tips:
+  - Query stations and reference prices separately and join only by a stable identifier present in both responses.
+related: [sig-arcgis]
+status: active
+verified: "2026-10-02"

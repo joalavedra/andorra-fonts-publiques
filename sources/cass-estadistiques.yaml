@@ -1,0 +1,29 @@
+id: cass-estadistiques
+name: CASS statistics downloads
+org: Caixa Andorrana de Seguretat Social
+sector: social-security
+tags: [social-security, statistics, pdf, spreadsheets]
+summary: Periodic PDF and spreadsheet downloads including pension calendars and registration movements.
+alerts: []
+access: [downloads]
+auth: none
+formats: [pdf, xlsx]
+update: periodic
+coverage: CASS statistical publications; periods vary by file.
+license: Reuse terms were not checked; consult the publisher before redistributing files.
+license_url: null
+base_url: https://www.cass.ad/estadistiques
+docs_url: https://www.cass.ad/estadistiques
+endpoints:
+  - path: /estadistiques
+    method: GET
+    desc: Browse current statistics and download linked reports.
+    example: 'curl -L "https://www.cass.ad/estadistiques"'
+    returns: HTML page with links to PDF and XLSX statistical downloads.
+quirks: []
+gotchas:
+  - Download links and publication periods are defined by the current HTML page and may change between releases.
+tips: []
+related: [estadistica-api]
+status: unknown
+verified: null

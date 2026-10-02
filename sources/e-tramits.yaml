@@ -1,0 +1,44 @@
+id: e-tramits
+name: e-tramits procedures
+org: Govern d'Andorra
+sector: public-services
+tags: [procedures, administration, permits, services]
+summary: Searchable HTML catalog of 645 administrative procedures in Catalan, Spanish and French.
+alerts:
+  - GET /search/?text=vehicle&q=%3Arelevance returns 645 procedures, while GET /search/?text=vehicle returns 45; omit q from text searches.
+access: [html]
+auth: none
+formats: [html, pdf]
+update: irregular
+coverage: Current procedure catalog, with language variants in Catalan, Spanish and French.
+license: All rights reserved under Govern d'Andorra terms; this project fetches pages live and cites them, and does not redistribute their content.
+license_url: https://www.govern.ad/
+base_url: https://www.e-tramits.ad/tramits
+docs_url: https://www.e-tramits.ad/tramits/
+endpoints:
+  - path: /search/?text={text}&page={page}
+    method: GET
+    desc: Search the procedure catalog in pages of 20; omit q when searching by text.
+    example: 'curl -sS "https://www.e-tramits.ad/tramits/search/?text=vehicle"'
+    returns: HTML result cards with procedure code, title and canonical detail URL; empty query reports 645 results.
+  - path: /{slug}/p/{code}?lang={ca|es|fr}
+    method: GET
+    desc: Retrieve one procedure detail page; select Spanish or French with the lang query parameter.
+    example: 'curl -sS "https://www.e-tramits.ad/tramits/a1-residencia-i-treball-autoritzacio-inicial/p/GV000484?lang=es"'
+    returns: HTML and JSON-LD containing procedure sections, forms, price, maximum resolution time, online availability and appointment requirements.
+  - path: /search/?q=%3Aname-asc&page={page}
+    method: GET
+    desc: Enumerate the complete procedure catalog in stable alphabetical order.
+    example: 'curl -sS "https://www.e-tramits.ad/tramits/search/?q=%3Aname-asc&page=0"'
+    returns: Twenty HTML procedure cards per page and a total-result count; inventory contains 645 procedures.
+quirks: [html-sections, localized-route]
+gotchas:
+  - Relevance-sorted paging changes order between requests; enumerate with q=:name-asc until 645 unique procedure codes are collected.
+  - Sitemap /tramits/sitemap.xml is an empty sitemap index; enumerate by paging search until no new procedure codes appear.
+  - Spanish and French variants use lang=es or lang=fr; GV000484 redirects to a code-only localized path such as /tramits//p/GV000484?lang=es.
+  - The Govern's rights notice prohibits republication without prior written consent, so only fetch live and cite links.
+tips:
+  - Preserve the exact procedure code, language and official URL when presenting information.
+related: [bopa, transparencia]
+status: active
+verified: "2026-10-02"

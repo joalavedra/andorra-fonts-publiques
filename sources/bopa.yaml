@@ -1,0 +1,45 @@
+id: bopa
+name: Butlletí Oficial del Principat d'Andorra
+org: BOPA
+sector: legislation
+tags: [official-bulletin, legislation, legal-text, search]
+summary: Full-text search over official bulletins and live HTML or PDF access to published documents from 1989 onward.
+alerts:
+  - GetDocumentsByBOPA for bulletin 100 in 2026 reported 194 records but returned 184; continue paging and deduplicate instead of trusting totalCount.
+access: [api, downloads]
+auth: none
+formats: [json, html, pdf]
+update: weekly
+coverage: 1989 onward
+license: Reuse including copying, adaptation, extraction, redistribution and public communication is allowed subject to preserving metadata and update dates, not distorting meaning, and not implying BOPA endorsement.
+license_url: https://www.bopa.ad/AvisLegal
+base_url: https://www.bopa.ad/
+docs_url: https://www.bopa.ad/
+endpoints:
+  - path: /api/GetPaginatedDocuments2Indexes
+    method: POST
+    desc: Search indexed bulletin documents with optional text, date, organization, topic, and paging filters.
+    example: 'curl -sS -X POST "https://bopaazurefunctions.azurewebsites.net/api/GetPaginatedDocuments2Indexes?code=$BOPA_FUNCTION_KEY" -H "Content-Type: application/json" -d ''{"textSearch":"habitatge","temaFilter":[],"dateFilter":[],"organismeFilter":[],"butlletiFilter":"","anyFilter":[],"size":25,"skip":0,"orderBy":"AnyButlleti desc, NumButlleti desc, DataArticle desc,OrganismeOrder,OrganismeChildOrder","searchMode":1}'''
+    returns: JSON object with matching document metadata, score and highlights; results are paged by size and skip.
+  - path: /api/GetDocumentsByBOPA?numBOPA={num}&year={year}
+    method: GET
+    desc: Retrieve documents belonging to one bulletin number and publication year.
+    example: 'curl -sS "https://bopaazurefunctions.azurewebsites.net/api/GetDocumentsByBOPA?code=$BOPA_FUNCTION_KEY&numBOPA=100&year=2026"'
+    returns: JSON object with totalCount and document records; observed count can exceed returned records.
+  - path: https://bopadocuments.blob.core.windows.net/bopa-documents/{folder}/{html|pdf}/{nomDocument}.{html|pdf}
+    method: GET
+    desc: Fetch a document blob using its publication-year folder and file name.
+    example: 'curl -L "https://bopadocuments.blob.core.windows.net/bopa-documents/038100/html/GR_2026_08_28_11_42_29.html"'
+    returns: HTML document text or a PDF byte stream; folder is publication year minus 1988 followed by bulletin number.
+quirks: [dynamic-function-key, untrusted-total-count, frontend-normalization, pdf-only]
+gotchas:
+  - Function keys are scraped from the public frontend JavaScript and can rotate after a deployment; never hard-code one.
+  - Search strips the specified Catalan accents and replaces percent signs with the word percentage before sending text.
+  - The document blob folder uses publication year rather than any year embedded in the document name.
+  - GetDocumentsByBOPA requires year; omitting it returned HTTP 500 in the inventory.
+tips:
+  - Keep the publication date and BOPA terms metadata when redistributing documents.
+  - Older scanned PDF text may need OCR; OCR behavior has not been checked.
+related: [consell-general-feeds]
+status: active
+verified: "2026-10-02"

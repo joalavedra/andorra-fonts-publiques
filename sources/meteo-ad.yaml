@@ -1,0 +1,29 @@
+id: meteo-ad
+name: meteo.ad station charts
+org: Servei Meteorològic Nacional
+sector: meteorology
+tags: [weather, meteorology, station, charts]
+summary: HTML station chart pages embed recent Highcharts categories and series.
+alerts: []
+access: [html]
+auth: none
+formats: [html]
+update: hourly
+coverage: Current station time series, available by station id.
+license: No usable legal notice was found; legal page was empty, so reuse terms are unknown.
+license_url: null
+base_url: https://www.meteo.ad
+docs_url: https://www.meteo.ad/
+endpoints:
+  - path: /Grafics/{id}
+    method: GET
+    desc: Retrieve a station chart page with inline Highcharts data.
+    example: 'curl -sS "https://www.meteo.ad/Grafics/1"'
+    returns: HTML containing chart categories and series embedded in the page JavaScript.
+quirks: [html-sections]
+gotchas:
+  - The /json path returns HTML rather than JSON, and no readable legal terms were found at /legal.
+tips: []
+related: [sig-arcgis]
+status: unknown
+verified: null

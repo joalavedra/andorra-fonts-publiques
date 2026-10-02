@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fonts-andorra"
+version = "0.1.0"
+description = "Educational clients and an MCP catalog for public sources in Andorra"
+readme = "README.md"
+license = "CC0-1.0"
+requires-python = ">=3.10"
+dependencies = ["mcp>=1.0,<2", "pyyaml>=6", "requests>=2.31"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+fonts-andorra-mcp = "fonts_andorra.mcp_server:main"
+fonts-andorra-ask = "fonts_andorra.assistant.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["fonts_andorra*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"

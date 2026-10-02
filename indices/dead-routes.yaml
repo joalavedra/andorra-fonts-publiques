@@ -1,0 +1,26 @@
+checked: "2026-10-02"
+domains:
+  - domain: dadesobertes.ad
+    status: unresolved
+  - domain: opendata.ad
+    status: unresolved
+  - domain: dades.ad
+    status: unresolved
+  - domain: registres.ad
+    status: unresolved
+  - domain: geoportal.ad
+    status: unresolved
+  - domain: contractacio.ad
+    status: unresolved
+  - domain: aire.ad
+    status: unresolved
+  - domain: sitmun.ad
+    status: unresolved
+  - domain: inaf.ad
+    status: unresolved
+  - domain: bancandorra.ad
+    status: unresolved
+  - domain: andorradifusio.ad
+    status: unresolved
+  - domain: snieda.ad
+    status: unresolved

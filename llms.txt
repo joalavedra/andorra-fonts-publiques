@@ -1,0 +1,16 @@
+# Andorra public sources
+
+Educational catalog; live endpoints, reuse notes, known traps and example calls.
+
+| ID | Source | Sector | Summary |
+|---|---|---|---|
+| `afa-feeds` | Andorran Financial Authority feeds | finance | Main and category RSS or Atom feeds for alerts, press releases, new regulation and financial education. |
+| `bopa` | Butlletí Oficial del Principat d'Andorra | legislation | Full-text search over official bulletins and live HTML or PDF access to published documents from 1989 onward. |
+| `carburants` | Fuel stations and reference prices | energy | ArcGIS layers for 75 fuel stations and 275 current reference-price records. |
+| `cass-estadistiques` | CASS statistics downloads | social-security | Periodic PDF and spreadsheet downloads including pension calendars and registration movements. |
+| `consell-general-feeds` | Consell General news feeds | parliament | RSS and Atom feeds for live parliamentary news and legislative tracking. |
+| `e-tramits` | e-tramits procedures | public-services | Searchable HTML catalog of 645 administrative procedures in Catalan, Spanish and French. |
+| `estadistica-api` | Andorra Department of Statistics API | statistics | Public API for 2,709 statistical tables with search, topic groups, JSON-stat data, CSV, XLSX and SDMX exports. |
+| `meteo-ad` | meteo.ad station charts | meteorology | HTML station chart pages embed recent Highcharts categories and series. |
+| `sig-arcgis` | Govern d'Andorra ArcGIS Enterprise | geography | ArcGIS REST catalog with curated fuel, traffic, weather, street, population, tourism, bus and parish layers. |
+| `transparencia` | Transparency portal | transparency | HTML portal linking to procurement, plans, grants, budgets, public entities, inventories and agreements. |

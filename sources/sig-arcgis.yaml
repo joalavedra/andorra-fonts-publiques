@@ -1,0 +1,38 @@
+id: sig-arcgis
+name: Govern d'Andorra ArcGIS Enterprise
+org: Govern d'Andorra
+sector: geography
+tags: [arcgis, gis, geography, layers, maps]
+summary: ArcGIS REST catalog with curated fuel, traffic, weather, street, population, tourism, bus and parish layers.
+alerts: []
+access: [arcgis-rest]
+auth: none
+formats: [arcgis-json, geojson]
+update: irregular
+coverage: Andorra; layer-specific time coverage and update dates.
+license: All rights reserved under Govern d'Andorra terms; layer licenses were not stated, so this project fetches live and cites links without redistributing layer content.
+license_url: https://www.govern.ad/
+base_url: https://sig.govern.ad/server/rest/services
+docs_url: https://sig.govern.ad/portal
+endpoints:
+  - path: /{folder}/{service}/FeatureServer/{layer}/query
+    method: GET
+    desc: Query an ArcGIS feature layer; see the curated layer whitelist in the client.
+    example: 'curl -sS "https://sig.govern.ad/server/rest/services/Hosted/IMD_Intensitat_Mitjana_Di%C3%A0ria/FeatureServer/0/query?where=1%3D1&outFields=*&returnCountOnly=true&f=json"'
+    returns: 'Checked 2026-10-02: carburants_stations 75; carburants_prices 275; aadt 13,218; weather_stations 33; streets 1,392; population 44; tourism_pois 395; bus_lines 12; parishes 9.'
+  - path: /{folder}/{service}/FeatureServer
+    method: GET
+    desc: List layer ids and names for a service before querying.
+    example: 'curl -sS "https://sig.govern.ad/server/rest/services/Hosted/Carrerer_Andorra/FeatureServer?f=json"'
+    returns: ArcGIS service JSON with layers containing numeric ids and names.
+quirks: [arcgis-layer-index, arcgis-paging, encoded-layer-name]
+gotchas:
+  - A layer id is not necessarily zero; inspect the service layer list before querying.
+  - ArcGIS errors such as 499 Token Required may be returned inside an HTTP 200 JSON object.
+  - Non-ASCII service names such as Diària and Població must be URL-encoded.
+  - Some feature services have not been updated since 2020 and layer licensing metadata is empty.
+tips:
+  - Use the curated whitelist in fonts_andorra.clients.arcgis rather than searching the full portal.
+related: [carburants, estadistica-api]
+status: active
+verified: "2026-10-02"

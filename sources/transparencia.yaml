@@ -1,0 +1,30 @@
+id: transparencia
+name: Transparency portal
+org: Govern d'Andorra
+sector: transparency
+tags: [transparency, procurement, budgets, grants, agreements]
+summary: HTML portal linking to procurement, plans, grants, budgets, public entities, inventories and agreements.
+alerts: []
+access: [html, downloads]
+auth: none
+formats: [html, pdf]
+update: periodic
+coverage: Government transparency pages and linked public documents.
+license: All rights reserved under Govern d'Andorra terms; this project fetches pages live and cites them, and does not redistribute their content.
+license_url: https://www.govern.ad/
+base_url: https://www.transparencia.ad/
+docs_url: https://www.transparencia.ad/
+endpoints:
+  - path: /
+    method: GET
+    desc: Browse transparency topics and links to original publications.
+    example: 'curl -L "https://www.transparencia.ad/"'
+    returns: HTML pages and links to BOPA notices, PDF files and other source publications.
+quirks: []
+gotchas:
+  - The portal mostly links to BOPA and PDF documents; follow and cite the original source rather than treating it as a structured API.
+  - Govern d'Andorra terms reserve reproduction and distribution without prior written consent.
+tips: []
+related: [bopa, e-tramits]
+status: unknown
+verified: null

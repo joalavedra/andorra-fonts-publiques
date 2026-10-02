@@ -1,0 +1,253 @@
+# Andorra public sources — full catalog
+
+## Andorran Financial Authority feeds (`afa-feeds`)
+
+- Organization: Autoritat Financera Andorrana
+- Summary: Main and category RSS or Atom feeds for alerts, press releases, new regulation and financial education.
+- Access: feed
+- Authentication: none
+- Licence: Feed redistribution terms were not checked; use for live retrieval and link to the original item.
+- Base URL: https://www.afa.ad
+- Verified: 2026-10-02
+
+### Endpoints
+
+- `GET /RSS` — Retrieve the AFA main RSS feed.
+  Example: `curl -sS "https://www.afa.ad/RSS"`
+  Returns: RSS or Atom XML feed with financial regulator item metadata.
+- `GET /ca/categories-home/{category}/RSS` — Retrieve a category feed for alerts, press releases, new regulation or financial education.
+  Example: `curl -sS "https://www.afa.ad/ca/categories-home/alertes/RSS"`
+  Returns: RSS or Atom XML containing items for the selected AFA category.
+
+### Alerts and gotchas
+
+- AFA Plone REST API search requires a permission that anonymous users do not have; use public XML feeds instead.
+- The /ca/categories-home/educacio-financiera/RSS request timed out at 30 seconds on 2026-10-02; one unavailable category can make aggregation partial.
+
+
+## Butlletí Oficial del Principat d'Andorra (`bopa`)
+
+- Organization: BOPA
+- Summary: Full-text search over official bulletins and live HTML or PDF access to published documents from 1989 onward.
+- Access: api, downloads
+- Authentication: none
+- Licence: Reuse including copying, adaptation, extraction, redistribution and public communication is allowed subject to preserving metadata and update dates, not distorting meaning, and not implying BOPA endorsement.
+- Base URL: https://www.bopa.ad/
+- Verified: 2026-10-02
+
+### Endpoints
+
+- `POST /api/GetPaginatedDocuments2Indexes` — Search indexed bulletin documents with optional text, date, organization, topic, and paging filters.
+  Example: `curl -sS -X POST "https://bopaazurefunctions.azurewebsites.net/api/GetPaginatedDocuments2Indexes?code=$BOPA_FUNCTION_KEY" -H "Content-Type: application/json" -d '{"textSearch":"habitatge","temaFilter":[],"dateFilter":[],"organismeFilter":[],"butlletiFilter":"","anyFilter":[],"size":25,"skip":0,"orderBy":"AnyButlleti desc, NumButlleti desc, DataArticle desc,OrganismeOrder,OrganismeChildOrder","searchMode":1}'`
+  Returns: JSON object with matching document metadata, score and highlights; results are paged by size and skip.
+- `GET /api/GetDocumentsByBOPA?numBOPA={num}&year={year}` — Retrieve documents belonging to one bulletin number and publication year.
+  Example: `curl -sS "https://bopaazurefunctions.azurewebsites.net/api/GetDocumentsByBOPA?code=$BOPA_FUNCTION_KEY&numBOPA=100&year=2026"`
+  Returns: JSON object with totalCount and document records; observed count can exceed returned records.
+- `GET https://bopadocuments.blob.core.windows.net/bopa-documents/{folder}/{html|pdf}/{nomDocument}.{html|pdf}` — Fetch a document blob using its publication-year folder and file name.
+  Example: `curl -L "https://bopadocuments.blob.core.windows.net/bopa-documents/038100/html/GR_2026_08_28_11_42_29.html"`
+  Returns: HTML document text or a PDF byte stream; folder is publication year minus 1988 followed by bulletin number.
+
+### Alerts and gotchas
+
+- GetDocumentsByBOPA for bulletin 100 in 2026 reported 194 records but returned 184; continue paging and deduplicate instead of trusting totalCount.
+- Function keys are scraped from the public frontend JavaScript and can rotate after a deployment; never hard-code one.
+- Search strips the specified Catalan accents and replaces percent signs with the word percentage before sending text.
+- The document blob folder uses publication year rather than any year embedded in the document name.
+- GetDocumentsByBOPA requires year; omitting it returned HTTP 500 in the inventory.
+
+
+## Fuel stations and reference prices (`carburants`)
+
+- Organization: Govern d'Andorra
+- Summary: ArcGIS layers for 75 fuel stations and 275 current reference-price records.
+- Access: arcgis-rest
+- Authentication: none
+- Licence: All rights reserved under Govern d'Andorra terms; this project fetches the layers live and cites links without redistributing their content.
+- Base URL: https://sig.govern.ad/server/rest/services/CARBURANTS/CARBURANTS/FeatureServer
+- Verified: 2026-10-02
+
+### Endpoints
+
+- `GET /0/query` — Query the 75 fuel station locations.
+  Example: `curl -sS "https://sig.govern.ad/server/rest/services/CARBURANTS/CARBURANTS/FeatureServer/0/query?where=1%3D1&outFields=*&f=json"`
+  Returns: ArcGIS feature set with station attributes and geometry; checked layer count is 75.
+- `GET /1/query` — Query the current reference-price records.
+  Example: `curl -sS "https://sig.govern.ad/server/rest/services/CARBURANTS/CARBURANTS/FeatureServer/1/query?where=1%3D1&outFields=*&f=json"`
+  Returns: ArcGIS feature set with 275 current fuel reference-price records, checked on 2026-10-02.
+
+### Alerts and gotchas
+
+- The service exposes stations and reference prices as separate layers; query layer 0 or 1 explicitly.
+
+
+## CASS statistics downloads (`cass-estadistiques`)
+
+- Organization: Caixa Andorrana de Seguretat Social
+- Summary: Periodic PDF and spreadsheet downloads including pension calendars and registration movements.
+- Access: downloads
+- Authentication: none
+- Licence: Reuse terms were not checked; consult the publisher before redistributing files.
+- Base URL: https://www.cass.ad/estadistiques
+- Verified: not rechecked
+
+### Endpoints
+
+- `GET /estadistiques` — Browse current statistics and download linked reports.
+  Example: `curl -L "https://www.cass.ad/estadistiques"`
+  Returns: HTML page with links to PDF and XLSX statistical downloads.
+
+### Alerts and gotchas
+
+- Download links and publication periods are defined by the current HTML page and may change between releases.
+
+
+## Consell General news feeds (`consell-general-feeds`)
+
+- Organization: Consell General
+- Summary: RSS and Atom feeds for live parliamentary news and legislative tracking.
+- Access: feed
+- Authentication: none
+- Licence: Feed redistribution terms were not checked; use for live retrieval and link to the original item.
+- Base URL: https://www.consellgeneral.ad
+- Verified: 2026-10-02
+
+### Endpoints
+
+- `GET /RSS` — Retrieve the Consell General RSS feed.
+  Example: `curl -sS "https://www.consellgeneral.ad/RSS"`
+  Returns: RSS or Atom XML feed containing title, link, publication date and summary for each item.
+
+### Alerts and gotchas
+
+- The feed's exact content type and item volume vary; parse XML entries rather than relying on one feed dialect.
+
+
+## e-tramits procedures (`e-tramits`)
+
+- Organization: Govern d'Andorra
+- Summary: Searchable HTML catalog of 645 administrative procedures in Catalan, Spanish and French.
+- Access: html
+- Authentication: none
+- Licence: All rights reserved under Govern d'Andorra terms; this project fetches pages live and cites them, and does not redistribute their content.
+- Base URL: https://www.e-tramits.ad/tramits
+- Verified: 2026-10-02
+
+### Endpoints
+
+- `GET /search/?text={text}&page={page}` — Search the procedure catalog in pages of 20; omit q when searching by text.
+  Example: `curl -sS "https://www.e-tramits.ad/tramits/search/?text=vehicle"`
+  Returns: HTML result cards with procedure code, title and canonical detail URL; empty query reports 645 results.
+- `GET /{slug}/p/{code}?lang={ca|es|fr}` — Retrieve one procedure detail page; select Spanish or French with the lang query parameter.
+  Example: `curl -sS "https://www.e-tramits.ad/tramits/a1-residencia-i-treball-autoritzacio-inicial/p/GV000484?lang=es"`
+  Returns: HTML and JSON-LD containing procedure sections, forms, price, maximum resolution time, online availability and appointment requirements.
+- `GET /search/?q=%3Aname-asc&page={page}` — Enumerate the complete procedure catalog in stable alphabetical order.
+  Example: `curl -sS "https://www.e-tramits.ad/tramits/search/?q=%3Aname-asc&page=0"`
+  Returns: Twenty HTML procedure cards per page and a total-result count; inventory contains 645 procedures.
+
+### Alerts and gotchas
+
+- GET /search/?text=vehicle&q=%3Arelevance returns 645 procedures, while GET /search/?text=vehicle returns 45; omit q from text searches.
+- Relevance-sorted paging changes order between requests; enumerate with q=:name-asc until 645 unique procedure codes are collected.
+- Sitemap /tramits/sitemap.xml is an empty sitemap index; enumerate by paging search until no new procedure codes appear.
+- Spanish and French variants use lang=es or lang=fr; GV000484 redirects to a code-only localized path such as /tramits//p/GV000484?lang=es.
+- The Govern's rights notice prohibits republication without prior written consent, so only fetch live and cite links.
+
+
+## Andorra Department of Statistics API (`estadistica-api`)
+
+- Organization: Departament d'Estadística
+- Summary: Public API for 2,709 statistical tables with search, topic groups, JSON-stat data, CSV, XLSX and SDMX exports.
+- Access: api
+- Authentication: none
+- Licence: Creative Commons Attribution 4.0 International for statistics owned by the Department; third-party data may have other terms.
+- Base URL: https://sig.govern.ad/SIGDDE.Public/estadistiquesdades/api
+- Verified: 2026-10-02
+
+### Endpoints
+
+- `GET /searchDivision?text={text}&language={language}` — Search divisions and statistical tables by non-empty text.
+  Example: `curl -sS "https://sig.govern.ad/SIGDDE.Public/estadistiquesdades/api/searchDivision?text=atur&language=ca"`
+  Returns: JSON array of table divisions with IdDivision, Division and Description.
+- `GET /data?file=json-stat&idDivision={id}&language={language}&variation={variation}&startDate={start}&endDate={end}` — Retrieve a table as JSON-stat 2.0 with explicit period bounds.
+  Example: `curl -sS "https://sig.govern.ad/SIGDDE.Public/estadistiquesdades/api/data?file=json-stat&idDivision=1070&language=ca&variation=Cap&startDate=1900&endDate=2100"`
+  Returns: JSON-stat 2.0 dataset with ordered id and size arrays, dimension labels, values and update metadata.
+- `POST /Inici/GetAgrupacionsByNivell` — Retrieve the topic hierarchy for levels one through three.
+  Example: `curl -sS -X POST "https://sig.govern.ad/SIGDDE.Public/Inici/GetAgrupacionsByNivell" -H "Content-Type: application/json" -d '{"Nivells":[1,2,3],"Idioma":"ca"}'`
+  Returns: JSON tree of 3 top-level, 18 second-level and 69 third-level topic groups.
+
+### Alerts and gotchas
+
+- searchDivision requires text and returns HTTP 400 when the text parameter is omitted.
+- /data returned HTTP 400 invalid or missing parameters when startDate and endDate were omitted from table 1070.
+- CSV is UTF-8 with BOM, semicolon-separated, and uses a decimal comma.
+- Period codes vary with table periodicity, for example 2010/03 quarterly and 2010 annual.
+
+
+## meteo.ad station charts (`meteo-ad`)
+
+- Organization: Servei Meteorològic Nacional
+- Summary: HTML station chart pages embed recent Highcharts categories and series.
+- Access: html
+- Authentication: none
+- Licence: No usable legal notice was found; legal page was empty, so reuse terms are unknown.
+- Base URL: https://www.meteo.ad
+- Verified: not rechecked
+
+### Endpoints
+
+- `GET /Grafics/{id}` — Retrieve a station chart page with inline Highcharts data.
+  Example: `curl -sS "https://www.meteo.ad/Grafics/1"`
+  Returns: HTML containing chart categories and series embedded in the page JavaScript.
+
+### Alerts and gotchas
+
+- The /json path returns HTML rather than JSON, and no readable legal terms were found at /legal.
+
+
+## Govern d'Andorra ArcGIS Enterprise (`sig-arcgis`)
+
+- Organization: Govern d'Andorra
+- Summary: ArcGIS REST catalog with curated fuel, traffic, weather, street, population, tourism, bus and parish layers.
+- Access: arcgis-rest
+- Authentication: none
+- Licence: All rights reserved under Govern d'Andorra terms; layer licenses were not stated, so this project fetches live and cites links without redistributing layer content.
+- Base URL: https://sig.govern.ad/server/rest/services
+- Verified: 2026-10-02
+
+### Endpoints
+
+- `GET /{folder}/{service}/FeatureServer/{layer}/query` — Query an ArcGIS feature layer; see the curated layer whitelist in the client.
+  Example: `curl -sS "https://sig.govern.ad/server/rest/services/Hosted/IMD_Intensitat_Mitjana_Di%C3%A0ria/FeatureServer/0/query?where=1%3D1&outFields=*&returnCountOnly=true&f=json"`
+  Returns: Checked 2026-10-02: carburants_stations 75; carburants_prices 275; aadt 13,218; weather_stations 33; streets 1,392; population 44; tourism_pois 395; bus_lines 12; parishes 9.
+- `GET /{folder}/{service}/FeatureServer` — List layer ids and names for a service before querying.
+  Example: `curl -sS "https://sig.govern.ad/server/rest/services/Hosted/Carrerer_Andorra/FeatureServer?f=json"`
+  Returns: ArcGIS service JSON with layers containing numeric ids and names.
+
+### Alerts and gotchas
+
+- A layer id is not necessarily zero; inspect the service layer list before querying.
+- ArcGIS errors such as 499 Token Required may be returned inside an HTTP 200 JSON object.
+- Non-ASCII service names such as Diària and Població must be URL-encoded.
+- Some feature services have not been updated since 2020 and layer licensing metadata is empty.
+
+
+## Transparency portal (`transparencia`)
+
+- Organization: Govern d'Andorra
+- Summary: HTML portal linking to procurement, plans, grants, budgets, public entities, inventories and agreements.
+- Access: html, downloads
+- Authentication: none
+- Licence: All rights reserved under Govern d'Andorra terms; this project fetches pages live and cites them, and does not redistribute their content.
+- Base URL: https://www.transparencia.ad/
+- Verified: not rechecked
+
+### Endpoints
+
+- `GET /` — Browse transparency topics and links to original publications.
+  Example: `curl -L "https://www.transparencia.ad/"`
+  Returns: HTML pages and links to BOPA notices, PDF files and other source publications.
+
+### Alerts and gotchas
+
+- The portal mostly links to BOPA and PDF documents; follow and cite the original source rather than treating it as a structured API.
+- Govern d'Andorra terms reserve reproduction and distribution without prior written consent.

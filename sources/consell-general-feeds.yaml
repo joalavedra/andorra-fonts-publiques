@@ -1,0 +1,30 @@
+id: consell-general-feeds
+name: Consell General news feeds
+org: Consell General
+sector: parliament
+tags: [parliament, rss, atom, legislation, news]
+summary: RSS and Atom feeds for live parliamentary news and legislative tracking.
+alerts: []
+access: [feed]
+auth: none
+formats: [rss, atom, xml]
+update: live
+coverage: Feed items published by the Consell General.
+license: Feed redistribution terms were not checked; use for live retrieval and link to the original item.
+license_url: null
+base_url: https://www.consellgeneral.ad
+docs_url: https://www.consellgeneral.ad/RSS
+endpoints:
+  - path: /RSS
+    method: GET
+    desc: Retrieve the Consell General RSS feed.
+    example: 'curl -sS "https://www.consellgeneral.ad/RSS"'
+    returns: RSS or Atom XML feed containing title, link, publication date and summary for each item.
+quirks: [feed-xml]
+gotchas:
+  - The feed's exact content type and item volume vary; parse XML entries rather than relying on one feed dialect.
+tips:
+  - Feed items are suitable for alerts and legislative tracking; link back to the original entry.
+related: [bopa, afa-feeds]
+status: active
+verified: "2026-10-02"

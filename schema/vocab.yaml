@@ -1,0 +1,57 @@
+sectors:
+  legislation: Legislation and official bulletins
+  statistics: Official statistics
+  geography: Geography and cartography
+  energy: Energy and fuel
+  public-services: Public services and procedures
+  parliament: Parliament and civic information
+  finance: Finance and regulation
+  meteorology: Weather and climate
+  social-security: Social security
+  transparency: Transparency and public administration
+access:
+  api: HTTP API with structured responses
+  arcgis-rest: ArcGIS REST services
+  html: HTML pages requiring parsing
+  feed: RSS or Atom feed
+  downloads: Downloadable files
+auth:
+  none: No authentication
+  token: Token required
+update:
+  live: Continuously updated
+  hourly: Hourly
+  weekly: Weekly
+  irregular: Irregular
+  periodic: Periodic, schedule not established
+  unknown: Unknown
+formats:
+  json: JSON
+  json-stat: JSON-stat
+  html: HTML
+  pdf: PDF
+  csv: CSV
+  xlsx: Excel workbook
+  xml: XML
+  rss: RSS
+  atom: Atom
+  geojson: GeoJSON
+  arcgis-json: ArcGIS JSON
+status:
+  active: Operating
+  degraded: Operating with known limitations
+  unknown: Not confirmed
+quirks:
+  dynamic-function-key: API keys are embedded in a public frontend bundle and may rotate.
+  untrusted-total-count: API total counts can exceed the number of returned records.
+  frontend-normalization: Search text must use the frontend normalization rules.
+  json-stat-dimensions: JSON-stat values must be mapped through ordered dimensions.
+  scale-and-decimals: Values require the DECIMALS and IDESCALA metadata.
+  date-range-required: Date bounds are required to retrieve the full time series.
+  arcgis-layer-index: ArcGIS layers must be identified by layer metadata rather than assumed indexes.
+  arcgis-paging: ArcGIS queries require resultOffset paging.
+  encoded-layer-name: ArcGIS service paths contain non-ASCII names that must be URL-encoded.
+  html-sections: Procedure details are grouped in rendered HTML sections.
+  localized-route: Localized procedure pages use language-specific routes.
+  feed-xml: Feed responses must be parsed as RSS or Atom XML.
+  pdf-only: Some records are available only as PDF.

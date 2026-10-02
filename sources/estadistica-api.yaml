@@ -1,0 +1,44 @@
+id: estadistica-api
+name: Andorra Department of Statistics API
+org: Departament d'Estadística
+sector: statistics
+tags: [statistics, json-stat, tables, search, time-series]
+summary: Public API for 2,709 statistical tables with search, topic groups, JSON-stat data, CSV, XLSX and SDMX exports.
+alerts: []
+access: [api]
+auth: none
+formats: [json-stat, csv, xlsx, xml]
+update: periodic
+coverage: Varies by table; table 1070 returned 134 rows through 2026-06 in the checked quarterly series.
+license: Creative Commons Attribution 4.0 International for statistics owned by the Department; third-party data may have other terms.
+license_url: https://www.estadistica.ad/
+base_url: https://sig.govern.ad/SIGDDE.Public/estadistiquesdades/api
+docs_url: https://sig.govern.ad/SIGDDE.Public/
+endpoints:
+  - path: /searchDivision?text={text}&language={language}
+    method: GET
+    desc: Search divisions and statistical tables by non-empty text.
+    example: 'curl -sS "https://sig.govern.ad/SIGDDE.Public/estadistiquesdades/api/searchDivision?text=atur&language=ca"'
+    returns: JSON array of table divisions with IdDivision, Division and Description.
+  - path: /data?file=json-stat&idDivision={id}&language={language}&variation={variation}&startDate={start}&endDate={end}
+    method: GET
+    desc: Retrieve a table as JSON-stat 2.0 with explicit period bounds.
+    example: 'curl -sS "https://sig.govern.ad/SIGDDE.Public/estadistiquesdades/api/data?file=json-stat&idDivision=1070&language=ca&variation=Cap&startDate=1900&endDate=2100"'
+    returns: JSON-stat 2.0 dataset with ordered id and size arrays, dimension labels, values and update metadata.
+  - path: /Inici/GetAgrupacionsByNivell
+    method: POST
+    desc: Retrieve the topic hierarchy for levels one through three.
+    example: 'curl -sS -X POST "https://sig.govern.ad/SIGDDE.Public/Inici/GetAgrupacionsByNivell" -H "Content-Type: application/json" -d ''{"Nivells":[1,2,3],"Idioma":"ca"}'''
+    returns: JSON tree of 3 top-level, 18 second-level and 69 third-level topic groups.
+quirks: [json-stat-dimensions, scale-and-decimals, date-range-required]
+gotchas:
+  - searchDivision requires text and returns HTTP 400 when the text parameter is omitted.
+  - /data returned HTTP 400 invalid or missing parameters when startDate and endDate were omitted from table 1070.
+  - CSV is UTF-8 with BOM, semicolon-separated, and uses a decimal comma.
+  - Period codes vary with table periodicity, for example 2010/03 quarterly and 2010 annual.
+tips:
+  - Request startDate=1900 and endDate=2100 to ask for the full available table range.
+  - Search on common vowels and deduplicate IdDivision values when assembling a broad table index.
+related: [cass-estadistiques]
+status: active
+verified: "2026-10-02"

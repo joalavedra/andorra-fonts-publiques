@@ -1,0 +1,664 @@
+{
+  "sources": [
+    {
+      "id": "afa-feeds",
+      "name": "Andorran Financial Authority feeds",
+      "org": "Autoritat Financera Andorrana",
+      "sector": "finance",
+      "tags": [
+        "finance",
+        "regulation",
+        "alerts",
+        "rss",
+        "atom"
+      ],
+      "summary": "Main and category RSS or Atom feeds for alerts, press releases, new regulation and financial education.",
+      "alerts": [],
+      "access": [
+        "feed"
+      ],
+      "auth": "none",
+      "formats": [
+        "rss",
+        "atom",
+        "xml"
+      ],
+      "update": "live",
+      "coverage": "AFA alerts, press releases, new regulation and financial-education feed items.",
+      "license": "Feed redistribution terms were not checked; use for live retrieval and link to the original item.",
+      "license_url": null,
+      "base_url": "https://www.afa.ad",
+      "docs_url": "https://www.afa.ad/RSS",
+      "endpoints": [
+        {
+          "path": "/RSS",
+          "method": "GET",
+          "desc": "Retrieve the AFA main RSS feed.",
+          "example": "curl -sS \"https://www.afa.ad/RSS\"",
+          "returns": "RSS or Atom XML feed with financial regulator item metadata."
+        },
+        {
+          "path": "/ca/categories-home/{category}/RSS",
+          "method": "GET",
+          "desc": "Retrieve a category feed for alerts, press releases, new regulation or financial education.",
+          "example": "curl -sS \"https://www.afa.ad/ca/categories-home/alertes/RSS\"",
+          "returns": "RSS or Atom XML containing items for the selected AFA category."
+        }
+      ],
+      "quirks": [
+        "feed-xml"
+      ],
+      "gotchas": [
+        "AFA Plone REST API search requires a permission that anonymous users do not have; use public XML feeds instead.",
+        "The /ca/categories-home/educacio-financiera/RSS request timed out at 30 seconds on 2026-10-02; one unavailable category can make aggregation partial."
+      ],
+      "tips": [
+        "Prefer category feeds when available to monitor regulation, alerts and financial education separately."
+      ],
+      "related": [
+        "consell-general-feeds"
+      ],
+      "status": "active",
+      "verified": "2026-10-02"
+    },
+    {
+      "id": "bopa",
+      "name": "Butlletí Oficial del Principat d'Andorra",
+      "org": "BOPA",
+      "sector": "legislation",
+      "tags": [
+        "official-bulletin",
+        "legislation",
+        "legal-text",
+        "search"
+      ],
+      "summary": "Full-text search over official bulletins and live HTML or PDF access to published documents from 1989 onward.",
+      "alerts": [
+        "GetDocumentsByBOPA for bulletin 100 in 2026 reported 194 records but returned 184; continue paging and deduplicate instead of trusting totalCount."
+      ],
+      "access": [
+        "api",
+        "downloads"
+      ],
+      "auth": "none",
+      "formats": [
+        "json",
+        "html",
+        "pdf"
+      ],
+      "update": "weekly",
+      "coverage": "1989 onward",
+      "license": "Reuse including copying, adaptation, extraction, redistribution and public communication is allowed subject to preserving metadata and update dates, not distorting meaning, and not implying BOPA endorsement.",
+      "license_url": "https://www.bopa.ad/AvisLegal",
+      "base_url": "https://www.bopa.ad/",
+      "docs_url": "https://www.bopa.ad/",
+      "endpoints": [
+        {
+          "path": "/api/GetPaginatedDocuments2Indexes",
+          "method": "POST",
+          "desc": "Search indexed bulletin documents with optional text, date, organization, topic, and paging filters.",
+          "example": "curl -sS -X POST \"https://bopaazurefunctions.azurewebsites.net/api/GetPaginatedDocuments2Indexes?code=$BOPA_FUNCTION_KEY\" -H \"Content-Type: application/json\" -d '{\"textSearch\":\"habitatge\",\"temaFilter\":[],\"dateFilter\":[],\"organismeFilter\":[],\"butlletiFilter\":\"\",\"anyFilter\":[],\"size\":25,\"skip\":0,\"orderBy\":\"AnyButlleti desc, NumButlleti desc, DataArticle desc,OrganismeOrder,OrganismeChildOrder\",\"searchMode\":1}'",
+          "returns": "JSON object with matching document metadata, score and highlights; results are paged by size and skip."
+        },
+        {
+          "path": "/api/GetDocumentsByBOPA?numBOPA={num}&year={year}",
+          "method": "GET",
+          "desc": "Retrieve documents belonging to one bulletin number and publication year.",
+          "example": "curl -sS \"https://bopaazurefunctions.azurewebsites.net/api/GetDocumentsByBOPA?code=$BOPA_FUNCTION_KEY&numBOPA=100&year=2026\"",
+          "returns": "JSON object with totalCount and document records; observed count can exceed returned records."
+        },
+        {
+          "path": "https://bopadocuments.blob.core.windows.net/bopa-documents/{folder}/{html|pdf}/{nomDocument}.{html|pdf}",
+          "method": "GET",
+          "desc": "Fetch a document blob using its publication-year folder and file name.",
+          "example": "curl -L \"https://bopadocuments.blob.core.windows.net/bopa-documents/038100/html/GR_2026_08_28_11_42_29.html\"",
+          "returns": "HTML document text or a PDF byte stream; folder is publication year minus 1988 followed by bulletin number."
+        }
+      ],
+      "quirks": [
+        "dynamic-function-key",
+        "untrusted-total-count",
+        "frontend-normalization",
+        "pdf-only"
+      ],
+      "gotchas": [
+        "Function keys are scraped from the public frontend JavaScript and can rotate after a deployment; never hard-code one.",
+        "Search strips the specified Catalan accents and replaces percent signs with the word percentage before sending text.",
+        "The document blob folder uses publication year rather than any year embedded in the document name.",
+        "GetDocumentsByBOPA requires year; omitting it returned HTTP 500 in the inventory."
+      ],
+      "tips": [
+        "Keep the publication date and BOPA terms metadata when redistributing documents.",
+        "Older scanned PDF text may need OCR; OCR behavior has not been checked."
+      ],
+      "related": [
+        "consell-general-feeds"
+      ],
+      "status": "active",
+      "verified": "2026-10-02"
+    },
+    {
+      "id": "carburants",
+      "name": "Fuel stations and reference prices",
+      "org": "Govern d'Andorra",
+      "sector": "energy",
+      "tags": [
+        "fuel",
+        "petrol-stations",
+        "prices",
+        "arcgis"
+      ],
+      "summary": "ArcGIS layers for 75 fuel stations and 275 current reference-price records.",
+      "alerts": [],
+      "access": [
+        "arcgis-rest"
+      ],
+      "auth": "none",
+      "formats": [
+        "arcgis-json",
+        "geojson"
+      ],
+      "update": "live",
+      "coverage": "Andorra; current station and reference-price records.",
+      "license": "All rights reserved under Govern d'Andorra terms; this project fetches the layers live and cites links without redistributing their content.",
+      "license_url": "https://www.govern.ad/",
+      "base_url": "https://sig.govern.ad/server/rest/services/CARBURANTS/CARBURANTS/FeatureServer",
+      "docs_url": "https://sig.govern.ad/portal",
+      "endpoints": [
+        {
+          "path": "/0/query",
+          "method": "GET",
+          "desc": "Query the 75 fuel station locations.",
+          "example": "curl -sS \"https://sig.govern.ad/server/rest/services/CARBURANTS/CARBURANTS/FeatureServer/0/query?where=1%3D1&outFields=*&f=json\"",
+          "returns": "ArcGIS feature set with station attributes and geometry; checked layer count is 75."
+        },
+        {
+          "path": "/1/query",
+          "method": "GET",
+          "desc": "Query the current reference-price records.",
+          "example": "curl -sS \"https://sig.govern.ad/server/rest/services/CARBURANTS/CARBURANTS/FeatureServer/1/query?where=1%3D1&outFields=*&f=json\"",
+          "returns": "ArcGIS feature set with 275 current fuel reference-price records, checked on 2026-10-02."
+        }
+      ],
+      "quirks": [
+        "arcgis-layer-index",
+        "arcgis-paging"
+      ],
+      "gotchas": [
+        "The service exposes stations and reference prices as separate layers; query layer 0 or 1 explicitly."
+      ],
+      "tips": [
+        "Query stations and reference prices separately and join only by a stable identifier present in both responses."
+      ],
+      "related": [
+        "sig-arcgis"
+      ],
+      "status": "active",
+      "verified": "2026-10-02"
+    },
+    {
+      "id": "cass-estadistiques",
+      "name": "CASS statistics downloads",
+      "org": "Caixa Andorrana de Seguretat Social",
+      "sector": "social-security",
+      "tags": [
+        "social-security",
+        "statistics",
+        "pdf",
+        "spreadsheets"
+      ],
+      "summary": "Periodic PDF and spreadsheet downloads including pension calendars and registration movements.",
+      "alerts": [],
+      "access": [
+        "downloads"
+      ],
+      "auth": "none",
+      "formats": [
+        "pdf",
+        "xlsx"
+      ],
+      "update": "periodic",
+      "coverage": "CASS statistical publications; periods vary by file.",
+      "license": "Reuse terms were not checked; consult the publisher before redistributing files.",
+      "license_url": null,
+      "base_url": "https://www.cass.ad/estadistiques",
+      "docs_url": "https://www.cass.ad/estadistiques",
+      "endpoints": [
+        {
+          "path": "/estadistiques",
+          "method": "GET",
+          "desc": "Browse current statistics and download linked reports.",
+          "example": "curl -L \"https://www.cass.ad/estadistiques\"",
+          "returns": "HTML page with links to PDF and XLSX statistical downloads."
+        }
+      ],
+      "quirks": [],
+      "gotchas": [
+        "Download links and publication periods are defined by the current HTML page and may change between releases."
+      ],
+      "tips": [],
+      "related": [
+        "estadistica-api"
+      ],
+      "status": "unknown",
+      "verified": null
+    },
+    {
+      "id": "consell-general-feeds",
+      "name": "Consell General news feeds",
+      "org": "Consell General",
+      "sector": "parliament",
+      "tags": [
+        "parliament",
+        "rss",
+        "atom",
+        "legislation",
+        "news"
+      ],
+      "summary": "RSS and Atom feeds for live parliamentary news and legislative tracking.",
+      "alerts": [],
+      "access": [
+        "feed"
+      ],
+      "auth": "none",
+      "formats": [
+        "rss",
+        "atom",
+        "xml"
+      ],
+      "update": "live",
+      "coverage": "Feed items published by the Consell General.",
+      "license": "Feed redistribution terms were not checked; use for live retrieval and link to the original item.",
+      "license_url": null,
+      "base_url": "https://www.consellgeneral.ad",
+      "docs_url": "https://www.consellgeneral.ad/RSS",
+      "endpoints": [
+        {
+          "path": "/RSS",
+          "method": "GET",
+          "desc": "Retrieve the Consell General RSS feed.",
+          "example": "curl -sS \"https://www.consellgeneral.ad/RSS\"",
+          "returns": "RSS or Atom XML feed containing title, link, publication date and summary for each item."
+        }
+      ],
+      "quirks": [
+        "feed-xml"
+      ],
+      "gotchas": [
+        "The feed's exact content type and item volume vary; parse XML entries rather than relying on one feed dialect."
+      ],
+      "tips": [
+        "Feed items are suitable for alerts and legislative tracking; link back to the original entry."
+      ],
+      "related": [
+        "bopa",
+        "afa-feeds"
+      ],
+      "status": "active",
+      "verified": "2026-10-02"
+    },
+    {
+      "id": "e-tramits",
+      "name": "e-tramits procedures",
+      "org": "Govern d'Andorra",
+      "sector": "public-services",
+      "tags": [
+        "procedures",
+        "administration",
+        "permits",
+        "services"
+      ],
+      "summary": "Searchable HTML catalog of 645 administrative procedures in Catalan, Spanish and French.",
+      "alerts": [
+        "GET /search/?text=vehicle&q=%3Arelevance returns 645 procedures, while GET /search/?text=vehicle returns 45; omit q from text searches."
+      ],
+      "access": [
+        "html"
+      ],
+      "auth": "none",
+      "formats": [
+        "html",
+        "pdf"
+      ],
+      "update": "irregular",
+      "coverage": "Current procedure catalog, with language variants in Catalan, Spanish and French.",
+      "license": "All rights reserved under Govern d'Andorra terms; this project fetches pages live and cites them, and does not redistribute their content.",
+      "license_url": "https://www.govern.ad/",
+      "base_url": "https://www.e-tramits.ad/tramits",
+      "docs_url": "https://www.e-tramits.ad/tramits/",
+      "endpoints": [
+        {
+          "path": "/search/?text={text}&page={page}",
+          "method": "GET",
+          "desc": "Search the procedure catalog in pages of 20; omit q when searching by text.",
+          "example": "curl -sS \"https://www.e-tramits.ad/tramits/search/?text=vehicle\"",
+          "returns": "HTML result cards with procedure code, title and canonical detail URL; empty query reports 645 results."
+        },
+        {
+          "path": "/{slug}/p/{code}?lang={ca|es|fr}",
+          "method": "GET",
+          "desc": "Retrieve one procedure detail page; select Spanish or French with the lang query parameter.",
+          "example": "curl -sS \"https://www.e-tramits.ad/tramits/a1-residencia-i-treball-autoritzacio-inicial/p/GV000484?lang=es\"",
+          "returns": "HTML and JSON-LD containing procedure sections, forms, price, maximum resolution time, online availability and appointment requirements."
+        },
+        {
+          "path": "/search/?q=%3Aname-asc&page={page}",
+          "method": "GET",
+          "desc": "Enumerate the complete procedure catalog in stable alphabetical order.",
+          "example": "curl -sS \"https://www.e-tramits.ad/tramits/search/?q=%3Aname-asc&page=0\"",
+          "returns": "Twenty HTML procedure cards per page and a total-result count; inventory contains 645 procedures."
+        }
+      ],
+      "quirks": [
+        "html-sections",
+        "localized-route"
+      ],
+      "gotchas": [
+        "Relevance-sorted paging changes order between requests; enumerate with q=:name-asc until 645 unique procedure codes are collected.",
+        "Sitemap /tramits/sitemap.xml is an empty sitemap index; enumerate by paging search until no new procedure codes appear.",
+        "Spanish and French variants use lang=es or lang=fr; GV000484 redirects to a code-only localized path such as /tramits//p/GV000484?lang=es.",
+        "The Govern's rights notice prohibits republication without prior written consent, so only fetch live and cite links."
+      ],
+      "tips": [
+        "Preserve the exact procedure code, language and official URL when presenting information."
+      ],
+      "related": [
+        "bopa",
+        "transparencia"
+      ],
+      "status": "active",
+      "verified": "2026-10-02"
+    },
+    {
+      "id": "estadistica-api",
+      "name": "Andorra Department of Statistics API",
+      "org": "Departament d'Estadística",
+      "sector": "statistics",
+      "tags": [
+        "statistics",
+        "json-stat",
+        "tables",
+        "search",
+        "time-series"
+      ],
+      "summary": "Public API for 2,709 statistical tables with search, topic groups, JSON-stat data, CSV, XLSX and SDMX exports.",
+      "alerts": [],
+      "access": [
+        "api"
+      ],
+      "auth": "none",
+      "formats": [
+        "json-stat",
+        "csv",
+        "xlsx",
+        "xml"
+      ],
+      "update": "periodic",
+      "coverage": "Varies by table; table 1070 returned 134 rows through 2026-06 in the checked quarterly series.",
+      "license": "Creative Commons Attribution 4.0 International for statistics owned by the Department; third-party data may have other terms.",
+      "license_url": "https://www.estadistica.ad/",
+      "base_url": "https://sig.govern.ad/SIGDDE.Public/estadistiquesdades/api",
+      "docs_url": "https://sig.govern.ad/SIGDDE.Public/",
+      "endpoints": [
+        {
+          "path": "/searchDivision?text={text}&language={language}",
+          "method": "GET",
+          "desc": "Search divisions and statistical tables by non-empty text.",
+          "example": "curl -sS \"https://sig.govern.ad/SIGDDE.Public/estadistiquesdades/api/searchDivision?text=atur&language=ca\"",
+          "returns": "JSON array of table divisions with IdDivision, Division and Description."
+        },
+        {
+          "path": "/data?file=json-stat&idDivision={id}&language={language}&variation={variation}&startDate={start}&endDate={end}",
+          "method": "GET",
+          "desc": "Retrieve a table as JSON-stat 2.0 with explicit period bounds.",
+          "example": "curl -sS \"https://sig.govern.ad/SIGDDE.Public/estadistiquesdades/api/data?file=json-stat&idDivision=1070&language=ca&variation=Cap&startDate=1900&endDate=2100\"",
+          "returns": "JSON-stat 2.0 dataset with ordered id and size arrays, dimension labels, values and update metadata."
+        },
+        {
+          "path": "/Inici/GetAgrupacionsByNivell",
+          "method": "POST",
+          "desc": "Retrieve the topic hierarchy for levels one through three.",
+          "example": "curl -sS -X POST \"https://sig.govern.ad/SIGDDE.Public/Inici/GetAgrupacionsByNivell\" -H \"Content-Type: application/json\" -d '{\"Nivells\":[1,2,3],\"Idioma\":\"ca\"}'",
+          "returns": "JSON tree of 3 top-level, 18 second-level and 69 third-level topic groups."
+        }
+      ],
+      "quirks": [
+        "json-stat-dimensions",
+        "scale-and-decimals",
+        "date-range-required"
+      ],
+      "gotchas": [
+        "searchDivision requires text and returns HTTP 400 when the text parameter is omitted.",
+        "/data returned HTTP 400 invalid or missing parameters when startDate and endDate were omitted from table 1070.",
+        "CSV is UTF-8 with BOM, semicolon-separated, and uses a decimal comma.",
+        "Period codes vary with table periodicity, for example 2010/03 quarterly and 2010 annual."
+      ],
+      "tips": [
+        "Request startDate=1900 and endDate=2100 to ask for the full available table range.",
+        "Search on common vowels and deduplicate IdDivision values when assembling a broad table index."
+      ],
+      "related": [
+        "cass-estadistiques"
+      ],
+      "status": "active",
+      "verified": "2026-10-02"
+    },
+    {
+      "id": "meteo-ad",
+      "name": "meteo.ad station charts",
+      "org": "Servei Meteorològic Nacional",
+      "sector": "meteorology",
+      "tags": [
+        "weather",
+        "meteorology",
+        "station",
+        "charts"
+      ],
+      "summary": "HTML station chart pages embed recent Highcharts categories and series.",
+      "alerts": [],
+      "access": [
+        "html"
+      ],
+      "auth": "none",
+      "formats": [
+        "html"
+      ],
+      "update": "hourly",
+      "coverage": "Current station time series, available by station id.",
+      "license": "No usable legal notice was found; legal page was empty, so reuse terms are unknown.",
+      "license_url": null,
+      "base_url": "https://www.meteo.ad",
+      "docs_url": "https://www.meteo.ad/",
+      "endpoints": [
+        {
+          "path": "/Grafics/{id}",
+          "method": "GET",
+          "desc": "Retrieve a station chart page with inline Highcharts data.",
+          "example": "curl -sS \"https://www.meteo.ad/Grafics/1\"",
+          "returns": "HTML containing chart categories and series embedded in the page JavaScript."
+        }
+      ],
+      "quirks": [
+        "html-sections"
+      ],
+      "gotchas": [
+        "The /json path returns HTML rather than JSON, and no readable legal terms were found at /legal."
+      ],
+      "tips": [],
+      "related": [
+        "sig-arcgis"
+      ],
+      "status": "unknown",
+      "verified": null
+    },
+    {
+      "id": "sig-arcgis",
+      "name": "Govern d'Andorra ArcGIS Enterprise",
+      "org": "Govern d'Andorra",
+      "sector": "geography",
+      "tags": [
+        "arcgis",
+        "gis",
+        "geography",
+        "layers",
+        "maps"
+      ],
+      "summary": "ArcGIS REST catalog with curated fuel, traffic, weather, street, population, tourism, bus and parish layers.",
+      "alerts": [],
+      "access": [
+        "arcgis-rest"
+      ],
+      "auth": "none",
+      "formats": [
+        "arcgis-json",
+        "geojson"
+      ],
+      "update": "irregular",
+      "coverage": "Andorra; layer-specific time coverage and update dates.",
+      "license": "All rights reserved under Govern d'Andorra terms; layer licenses were not stated, so this project fetches live and cites links without redistributing layer content.",
+      "license_url": "https://www.govern.ad/",
+      "base_url": "https://sig.govern.ad/server/rest/services",
+      "docs_url": "https://sig.govern.ad/portal",
+      "endpoints": [
+        {
+          "path": "/{folder}/{service}/FeatureServer/{layer}/query",
+          "method": "GET",
+          "desc": "Query an ArcGIS feature layer; see the curated layer whitelist in the client.",
+          "example": "curl -sS \"https://sig.govern.ad/server/rest/services/Hosted/IMD_Intensitat_Mitjana_Di%C3%A0ria/FeatureServer/0/query?where=1%3D1&outFields=*&returnCountOnly=true&f=json\"",
+          "returns": "Checked 2026-10-02: carburants_stations 75; carburants_prices 275; aadt 13,218; weather_stations 33; streets 1,392; population 44; tourism_pois 395; bus_lines 12; parishes 9."
+        },
+        {
+          "path": "/{folder}/{service}/FeatureServer",
+          "method": "GET",
+          "desc": "List layer ids and names for a service before querying.",
+          "example": "curl -sS \"https://sig.govern.ad/server/rest/services/Hosted/Carrerer_Andorra/FeatureServer?f=json\"",
+          "returns": "ArcGIS service JSON with layers containing numeric ids and names."
+        }
+      ],
+      "quirks": [
+        "arcgis-layer-index",
+        "arcgis-paging",
+        "encoded-layer-name"
+      ],
+      "gotchas": [
+        "A layer id is not necessarily zero; inspect the service layer list before querying.",
+        "ArcGIS errors such as 499 Token Required may be returned inside an HTTP 200 JSON object.",
+        "Non-ASCII service names such as Diària and Població must be URL-encoded.",
+        "Some feature services have not been updated since 2020 and layer licensing metadata is empty."
+      ],
+      "tips": [
+        "Use the curated whitelist in fonts_andorra.clients.arcgis rather than searching the full portal."
+      ],
+      "related": [
+        "carburants",
+        "estadistica-api"
+      ],
+      "status": "active",
+      "verified": "2026-10-02"
+    },
+    {
+      "id": "transparencia",
+      "name": "Transparency portal",
+      "org": "Govern d'Andorra",
+      "sector": "transparency",
+      "tags": [
+        "transparency",
+        "procurement",
+        "budgets",
+        "grants",
+        "agreements"
+      ],
+      "summary": "HTML portal linking to procurement, plans, grants, budgets, public entities, inventories and agreements.",
+      "alerts": [],
+      "access": [
+        "html",
+        "downloads"
+      ],
+      "auth": "none",
+      "formats": [
+        "html",
+        "pdf"
+      ],
+      "update": "periodic",
+      "coverage": "Government transparency pages and linked public documents.",
+      "license": "All rights reserved under Govern d'Andorra terms; this project fetches pages live and cites them, and does not redistribute their content.",
+      "license_url": "https://www.govern.ad/",
+      "base_url": "https://www.transparencia.ad/",
+      "docs_url": "https://www.transparencia.ad/",
+      "endpoints": [
+        {
+          "path": "/",
+          "method": "GET",
+          "desc": "Browse transparency topics and links to original publications.",
+          "example": "curl -L \"https://www.transparencia.ad/\"",
+          "returns": "HTML pages and links to BOPA notices, PDF files and other source publications."
+        }
+      ],
+      "quirks": [],
+      "gotchas": [
+        "The portal mostly links to BOPA and PDF documents; follow and cite the original source rather than treating it as a structured API.",
+        "Govern d'Andorra terms reserve reproduction and distribution without prior written consent."
+      ],
+      "tips": [],
+      "related": [
+        "bopa",
+        "e-tramits"
+      ],
+      "status": "unknown",
+      "verified": null
+    }
+  ],
+  "dead_routes": {
+    "checked": "2026-10-02",
+    "domains": [
+      {
+        "domain": "dadesobertes.ad",
+        "status": "unresolved"
+      },
+      {
+        "domain": "opendata.ad",
+        "status": "unresolved"
+      },
+      {
+        "domain": "dades.ad",
+        "status": "unresolved"
+      },
+      {
+        "domain": "registres.ad",
+        "status": "unresolved"
+      },
+      {
+        "domain": "geoportal.ad",
+        "status": "unresolved"
+      },
+      {
+        "domain": "contractacio.ad",
+        "status": "unresolved"
+      },
+      {
+        "domain": "aire.ad",
+        "status": "unresolved"
+      },
+      {
+        "domain": "sitmun.ad",
+        "status": "unresolved"
+      },
+      {
+        "domain": "inaf.ad",
+        "status": "unresolved"
+      },
+      {
+        "domain": "bancandorra.ad",
+        "status": "unresolved"
+      },
+      {
+        "domain": "andorradifusio.ad",
+        "status": "unresolved"
+      },
+      {
+        "domain": "snieda.ad",
+        "status": "unresolved"
+      }
+    ]
+  }
+}
