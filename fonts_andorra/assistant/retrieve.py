@@ -28,20 +28,46 @@ def _tokens(value: str) -> set[str]:
     return {token for token in re.findall(r"[a-z0-9]+", normalize(value)) if len(token) > 2}
 
 
-def _fallback(question: str, keywords: list[str]) -> list[dict]:
-    terms = _tokens(" ".join([question, *keywords]))
+def _token_matches(left: str, right: str) -> bool:
+    return left == right or (len(left) >= 5 and len(right) >= 5 and left[:5] == right[:5])
+
+
+def _rank_candidates(
+    items: list[dict],
+    keywords: list[str],
+    site_ranks: dict[str, tuple[int, int]] | None = None,
+    fallback_ranks: dict[str, int] | None = None,
+) -> list[dict]:
+    terms = set()
+    for keyword in llm.clean_keywords(keywords):
+        terms.update(_tokens(keyword))
+    site_ranks = site_ranks or {}
+    fallback_ranks = fallback_ranks or {}
+    ranked = []
+    for item_order, item in enumerate(items):
+        code = item.get("code", "")
+        candidate = _tokens(f"{item.get('title', '')} {item.get('url', '')}")
+        overlap = sum(
+            any(_token_matches(term, candidate_term) for candidate_term in candidate)
+            for term in terms
+        )
+        if code in site_ranks:
+            priority = (0, *site_ranks[code])
+        else:
+            priority = (1, fallback_ranks.get(code, item_order), item_order)
+        ranked.append((-overlap, *priority, code, item))
+    ranked.sort(key=lambda entry: entry[:-1])
+    return [entry[-1] for entry in ranked]
+
+
+def _fallback(keywords: list[str]) -> list[dict]:
+    if not llm.clean_keywords(keywords):
+        return []
     try:
         items = tramits.list_all()
     except (requests.RequestException, RuntimeError, ValueError):
         return []
-    ranked = []
-    for item in items:
-        candidate = _tokens(f"{item.get('title', '')} {item.get('url', '')}")
-        overlap = len(terms & candidate)
-        if overlap:
-            ranked.append((-overlap, item["code"], item))
-    ranked.sort(key=lambda value: value[:2])
-    return [item for _, _, item in ranked[:8]]
+    return _rank_candidates(items, keywords)[:8]
 
 
 def retrieve(question: str) -> list[Source]:
@@ -50,29 +76,35 @@ def retrieve(question: str) -> list[Source]:
         keywords = llm.keywords(safe_question)
     except (requests.RequestException, RuntimeError, ValueError):
         keywords = []
-    if not keywords:
-        words = list(_tokens(safe_question))
-        keywords = [" ".join(words[:3])] if words else [safe_question]
-        if len(words) > 3:
-            keywords.append(" ".join(words[2:5]))
+    keywords = llm.clean_keywords(keywords)
     candidates: dict[str, dict] = {}
-    for keyword in keywords[:3]:
+    site_ranks: dict[str, tuple[int, int]] = {}
+    site_order = 0
+    for keyword in keywords[:4]:
         try:
-            for item in tramits.search(keyword):
-                candidates.setdefault(item["code"], item)
+            for result_rank, item in enumerate(tramits.search(keyword)):
+                code = item.get("code")
+                if not code:
+                    continue
+                candidates.setdefault(code, item)
+                rank = (result_rank, site_order)
+                if code not in site_ranks or rank < site_ranks[code]:
+                    site_ranks[code] = rank
+                site_order += 1
         except (requests.RequestException, RuntimeError, ValueError) as exc:
             logger.debug("Procedure search failed: %s", exc)
             continue
-    for item in _fallback(safe_question, keywords):
-        candidates.setdefault(item["code"], item)
-    scored = []
-    query_terms = _tokens(" ".join([safe_question, *keywords]))
-    for item in candidates.values():
-        overlap = len(query_terms & _tokens(f"{item.get('title', '')} {item.get('url', '')}"))
-        scored.append((-overlap, item["code"], item))
-    scored.sort(key=lambda value: value[:2])
+    fallback_items = _fallback(keywords)
+    fallback_ranks = {}
+    for rank, item in enumerate(fallback_items):
+        code = item.get("code")
+        if not code:
+            continue
+        candidates.setdefault(code, item)
+        fallback_ranks.setdefault(code, rank)
+    scored = _rank_candidates(list(candidates.values()), keywords, site_ranks, fallback_ranks)
     retrieved: list[Source] = []
-    for _, _, item in scored[:3]:
+    for item in scored[:5]:
         try:
             detail = tramits.procedure(item["url"])
         except (requests.RequestException, RuntimeError, ValueError) as exc:
@@ -90,7 +122,7 @@ def retrieve(question: str) -> list[Source]:
         text_parts.extend(f"{heading}: {value}" for heading, value in detail["sections"].items())
         text = "\n".join(text_parts)
         retrieved.append(Source(len(retrieved) + 1, detail.get("title") or item.get("title") or item["code"],
-                                detail["url"], text[:4000]))
+                                detail["url"], text[:2500]))
     if re.search(
         r"\b(law|legal|regulation|reglament|regulacion|llei|ley|loi|decret|decreto|normativa)\b",
         normalize(question),
@@ -100,7 +132,7 @@ def retrieve(question: str) -> list[Source]:
             for item in results["items"][:3]:
                 text = bopa.document_text(item)
                 retrieved.append(Source(len(retrieved) + 1, item.get("name") or "BOPA document",
-                                        item.get("html_url") or item.get("pdf_url") or "", text[:4000]))
+                                        item.get("html_url") or item.get("pdf_url") or "", text[:2500]))
         except (requests.RequestException, RuntimeError, ValueError) as exc:
             logger.debug("BOPA retrieval failed: %s", exc)
     if not retrieved:

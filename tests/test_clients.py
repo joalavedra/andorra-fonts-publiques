@@ -189,3 +189,50 @@ def test_afa_aggregates_available_categories_after_timeout(monkeypatch):
     items = feeds.latest("afa")
     assert items
     assert items[0]["title"] == "Example item"
+
+
+def test_afa_deduplicates_language_variants_preferring_catalan(monkeypatch):
+    urls = [
+        "https://www.afa.ad/fr/rss",
+        "https://www.afa.ad/en/rss",
+        "https://www.afa.ad/ca/rss",
+        "https://www.afa.ad/es/rss",
+    ]
+    entries = {
+        "fr": [
+            ("Shared notice", "2026-10-01T00:00:00Z", "shared"),
+            ("First fallback", "2026-10-01T00:00:00Z", "fallback"),
+        ],
+        "en": [
+            ("Shared notice", "2026-10-01T00:00:00Z", "shared"),
+            ("First fallback", "2026-10-01T00:00:00Z", "fallback"),
+        ],
+        "ca": [("Shared notice", "2026-10-01T00:00:00Z", "shared")],
+        "es": [("Shared notice", "2026-10-01T00:00:00Z", "shared")],
+    }
+
+    class Response:
+        def __init__(self, content):
+            self.content = content
+
+        def raise_for_status(self):
+            return None
+
+    def get(url, **kwargs):
+        language = url.split("/")[-2]
+        item_xml = "".join(
+            f"<item><title>{title}</title><pubDate>{date}</pubDate>"
+            f"<link>https://www.afa.ad/{language}/{slug}</link></item>"
+            for title, date, slug in entries[language]
+        )
+        return Response(f"<rss><channel>{item_xml}</channel></rss>".encode())
+
+    monkeypatch.setitem(feeds.FEEDS, "afa", urls)
+    monkeypatch.setattr(feeds.http, "get", get)
+
+    items = feeds.latest("afa")
+
+    shared = next(item for item in items if item["title"] == "Shared notice")
+    fallback = next(item for item in items if item["title"] == "First fallback")
+    assert shared["url"] == "https://www.afa.ad/ca/shared"
+    assert fallback["url"] == "https://www.afa.ad/fr/fallback"

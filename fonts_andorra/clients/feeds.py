@@ -86,6 +86,16 @@ def latest(feed_key: str, limit: int = 10) -> list[dict]:
     if not successful_feeds and failures:
         raise RuntimeError(f"All {len(FEEDS[feed_key])} feed endpoints failed for {feed_key}") from failures[0]
     unique = {}
-    for item in collected:
-        unique.setdefault(item["url"] or item["title"], item)
+    if feed_key == "afa":
+        for item in collected:
+            key = (item["title"], item["date"])
+            current = unique.get(key)
+            if current is None or (
+                "/ca/" in (item["url"] or "").lower()
+                and "/ca/" not in (current["url"] or "").lower()
+            ):
+                unique[key] = item
+    else:
+        for item in collected:
+            unique.setdefault(item["url"] or item["title"], item)
     return sorted(unique.values(), key=lambda item: _timestamp(item["date"]), reverse=True)[:max(0, limit)]
