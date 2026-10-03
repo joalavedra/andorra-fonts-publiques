@@ -1,3 +1,5 @@
+![CI](https://github.com/joalavedra/andorra-fonts-publiques/actions/workflows/ci.yml/badge.svg)
+
 # Andorra public sources
 
 An educational catalog and small Python clients for finding and querying public sources in Andorra. It documents the endpoint shapes, reuse terms, verified behavior and practical traps, then exposes selected live data through Python, an MCP server and a cited assistant.
@@ -93,6 +95,11 @@ The test suite is offline and uses saved public response fixtures:
 python scripts/validate.py
 python scripts/build.py
 ```
+
+## CI
+
+`ci.yml` runs lint, offline tests, validation and generated-file checks on pushes and pull requests; `live.yml` runs weekly live checks and uploads a report.
+The assistant check in `live.yml` requires a repository `GEMINI_API_KEY` secret.
 
 ## Assistant evaluation
 
