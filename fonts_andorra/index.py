@@ -31,7 +31,15 @@ SKIPPED_PATH_SEGMENTS = {
 def tokenize(value: str) -> list[str]:
     """Normalize, filter, and stem words for index matching."""
     tokens = TOKEN_RE.findall(normalize(value))
-    return [token[:6] for token in tokens if len(token) > 2 and token not in STOPWORDS]
+    return [_stem(token) for token in tokens if len(token) > 2 and token not in STOPWORDS]
+
+
+def _stem(token: str) -> str:
+    if len(token) > 4 and token.endswith("s"):
+        token = token[:-1]
+    if len(token) > 4 and token[-1] in "aeo":
+        token = token[:-1]
+    return token[:8]
 
 
 @lru_cache(maxsize=1)

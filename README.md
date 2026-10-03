@@ -88,7 +88,7 @@ The catalog marks sources and terms individually. Verify the terms that apply to
 
 ## Local search index
 
-`fonts_andorra/data/index.json` contains e-tramits titles and URLs, plus Govern page titles, URLs and section headings only; all page bodies are fetched live and cited because the source content is all rights reserved. Assistant procedure retrieval combines local BM25 ranking with e-tramits `text=` searches and a 24-hour cached listing fallback; Govern search uses local BM25 and fetches matching pages live, avoiding Govern's disallowed site search.
+`fonts_andorra/data/index.json` contains e-tramits titles and URLs, plus Govern page titles, URLs and section headings only; all page bodies are fetched live and cited because the source content is all rights reserved. Assistant procedure and Govern retrieval use local BM25 search and fetch matching pages live; Govern's disallowed site search is not used.
 Rebuild it from live e-tramits and the Catalan Govern sitemap with `.venv/bin/python scripts/build_index.py`; this networked builder is intentionally not part of CI.
 
 ## Tests

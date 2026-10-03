@@ -1,6 +1,12 @@
 from fonts_andorra import index
 
 
+def test_token_stemming_merges_inflections_without_conflating_words():
+    assert index.tokenize("nòmades") == index.tokenize("nòmada")
+    assert index.tokenize("expedició") != index.tokenize("expedient")
+    assert index.tokenize("passaports") == index.tokenize("passaport")
+
+
 def test_bm25_search_uses_title_headings_and_source_filter(monkeypatch):
     items = [
         {
