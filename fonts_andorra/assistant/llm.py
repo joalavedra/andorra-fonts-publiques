@@ -19,7 +19,7 @@ KEYWORD_STOPWORDS = {
     "tramit", "tramits", "procediment", "procediments", "procedimiento", "procedure", "procedures",
     "sollicitud", "sollicituds", "solicitud", "solicitudes", "request", "application",
     "the", "for", "with", "and", "what", "when", "does", "want", "my", "which", "where",
-    "un", "una", "del", "amb", "para", "por", "que", "hasta", "cuando",
+    "un", "una", "del", "amb", "para", "por", "que", "hasta", "cuando", "andorra",
 }
 
 
@@ -69,8 +69,12 @@ def keywords(question: str) -> list[str]:
     response = generate(
         "Return a JSON array of 2–4 short Catalan noun phrases naming the same procedure asked about. "
         "Translate the intent faithfully into words likely to appear in an e-tramits title. "
-        "Keep the question's distinctive subject and proper names; do not invent another topic or suggest "
-        "unrelated procedures. Usually return two variants of that one procedure. "
+        "Keep the question's distinctive subject, official terminology, and proper names; do not invent another "
+        "topic or suggest unrelated procedures. Preserve scope-defining qualifiers such as level, eligibility, "
+        "procedure type, and initial versus renewal; do not replace them with a neighboring variant. "
+        "Exclude incidental circumstances or motivations unless they are part of the service name; name the "
+        "administrative service itself. "
+        "Usually return two variants of that one procedure. "
         "Exclude words about price, cost, time, deadlines, how, or generic procedure/request terms "
         "(preu, cost, termini, temps, quant, tràmit, procediment, sol·licitud). "
         "Examples: fishing licence -> [\"llicència de pesca\", \"permís de pesca\"]; "
@@ -79,7 +83,9 @@ def keywords(question: str) -> list[str]:
         "Output only the JSON array.\nQuestion: " + safe_question,
         system_instruction=(
             "Return only 2–4 concise Catalan title phrases for the procedure the question is actually about. "
-            "Preserve its distinguishing topic; never substitute an unrelated procedure. "
+            "Preserve its official terminology and distinguishing topic; never substitute a neighboring variant. "
+            "Keep scope-defining qualifiers such as level, eligibility, procedure type, and initial versus renewal. "
+            "Exclude incidental circumstances or motivations unless they are part of the service name. "
             "Do not answer the question. Exclude cost, time, deadline, how, and generic procedure words."
         ),
     )
