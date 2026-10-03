@@ -111,4 +111,19 @@ GEMINI_API_KEY=... .venv/bin/python evals/run.py --baseline
 
 Latest result (`evals/results-2026-10-03.md`, `gemini-2.5-flash`): 10/10 cases pass with the right procedure cited and 18/18 facts correct. The same model answering closed-book got 3/18 facts. These 10 cases were also used while tuning retrieval, so treat this as a regression set rather than a held-out benchmark.
 
+### Held-out set
+
+`evals/heldout.yaml` has 20 more cases written after tuning ended: 15 procedures not used for tuning (ca/es/fr/en) and 5 questions no source here can answer (weather, ski pass prices, border queues, a minister's personal phone, the user's own vacation days), which must be declined without stating any amount.
+
+```bash
+GEMINI_API_KEY=... .venv/bin/python evals/run.py --cases evals/heldout.yaml --baseline
+```
+
+- First run (`evals/results-heldout-2026-10-03-first-run.md`): 15/20 as scored. Three failures were scorer bugs (citations written as `[1, 2]` were not parsed, and "no se encontró" was not recognised as declining). Rescoring the same answers gives 18/20. The two real failures:
+  - The redactor masked dates such as `23-09-2026` as phone numbers, so the assistant could not state an application period. Now fixed.
+  - For "I'm selling my flat and need the habitability certificate", it answered from the *cèdula d'habitabilitat* (2 months) instead of the *certificat d'habitabilitat* (72 hours). The question is arguably ambiguous, since a sale needs the cèdula.
+- After the fixes (`evals/results-heldout-2026-10-03.md`): 20/20, 23/23 facts, 5/5 unanswerable questions declined, 0 bad citations. The same model closed-book got 6/23 facts. The habitability case passed because retrieval returned a different set of procedures, not because of a fix. Keyword generation is not fully deterministic, so expect that case to flip.
+
+From here this set is no longer strictly held out: one bug fix was found with it. New failures should be fixed against new cases.
+
 The one-page proposal for the Govern is in `docs/pitch.md`.
