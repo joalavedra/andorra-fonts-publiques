@@ -1,0 +1,74 @@
+# Ground truth taken from the live e-tramits pages on 2026-10-02 (sections "Preu", "Termini de resolució màxim",
+# availability line). Each case: the assistant must cite the procedure page (url contains `code`) and state every
+# `facts` item; a fact is a list of alternative regexes (case-insensitive, matched against the answer with
+# whitespace collapsed). The harness also fails citations [n] that point to no returned source.
+version: 2026-10-02
+cases:
+  - id: residence-work-initial
+    lang: ca
+    question: "Quant costa i quant triga l'autorització inicial de residència i treball per compte d'altri?"
+    code: GV000484
+    facts:
+      price: ['190[,.]96']
+      deadline: ['60\s*(dies|días|days|jours)']
+  - id: self-employed-residence
+    lang: es
+    question: "Quiero montar mi propio negocio en Andorra y vivir allí: ¿cuánto cuesta la autorización inicial de residencia y trabajo por cuenta propia y se puede pedir online?"
+    code: GV000501
+    facts:
+      price: ['190[,.]96']
+      in_person: ['cita previa', 'presencial', 'no (est[aà]|es) disponible en l[ií]nea', 'no .{0,20}online']
+  - id: first-vehicle-registration
+    lang: en
+    question: "How much does it cost to register a car for the first time in Andorra (new or with foreign plates) and how long does it take?"
+    code: GV000365
+    facts:
+      price: ['250([,.]00)?\s*€', '€\s*250', '250 euros?']
+      deadline: ['48\s*(h|hours|hores|horas)']
+  - id: blue-card-disability
+    lang: ca
+    question: "Quin preu té demanar per primer cop la targeta blava i en quant de temps es resol?"
+    code: GV000038
+    facts:
+      price: ['0([,.]00)?\s*€', 'gratu[iï]t', 'sense cost', 'no t[eé] cost']
+      deadline: ['2\s*mes']
+  - id: affordable-housing-offer
+    lang: es
+    question: "¿Cómo participo en una oferta pública de vivienda de precio asequible y cuánto tardan en resolver?"
+    code: GV001306
+    facts:
+      deadline: ['2\s*mes', 'dos meses']
+      period: ['convocat[oò]ria']
+  - id: startup-qualification
+    lang: en
+    question: "I want my company recognised as a startup (empresa emergent) in Andorra. What's the fee and the maximum resolution time?"
+    code: GV000786
+    facts:
+      price: ['0([,.]00)?\s*€', 'free', 'no (fee|cost)']
+      deadline: ['15\s*(working|business)?\s*days', '15\s*dies']
+  - id: taxi-driver-licence
+    lang: fr
+    question: "Combien coûte l'obtention de la carte de chauffeur de taxi en Andorre et peut-on la demander en ligne ?"
+    code: GV001302
+    facts:
+      price: ['128[,.]63']
+      in_person: ['rendez-vous', 'en personne', 'pr[eé]sentiel', 'pas disponible en ligne', 'cita pr[eè]via']
+  - id: immigration-card-duplicate
+    lang: ca
+    question: "He perdut la tarja d'immigració. Quant costa el duplicat i quant triga?"
+    code: GV000498
+    facts:
+      price: ['22[,.]61']
+      deadline: ['48\s*(h|hores|hours)']
+  - id: ev-purchase-aid
+    lang: es
+    question: "¿Hasta cuándo puedo pedir la ayuda del Pla Engega para comprar un vehículo eléctrico?"
+    code: GV000314
+    facts:
+      period: ['15/11/2026', '15 de noviembre( de 2026)?']
+  - id: extended-shop-hours
+    lang: en
+    question: "My shop wants to open beyond normal commercial hours. Which procedure is it and how long can the administration take to answer?"
+    code: GV000278
+    facts:
+      deadline: ['60\s*(working|business)?\s*days', '60\s*dies']

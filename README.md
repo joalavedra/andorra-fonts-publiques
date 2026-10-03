@@ -93,3 +93,15 @@ The test suite is offline and uses saved public response fixtures:
 python scripts/validate.py
 python scripts/build.py
 ```
+
+## Assistant evaluation
+
+`evals/procedures.yaml` has 10 real procedures with ground truth (price, maximum resolution time, application period, in-person requirement) taken from the live e-tramits pages on 2026-10-02. Run it with:
+
+```bash
+GEMINI_API_KEY=... .venv/bin/python evals/run.py --baseline
+```
+
+Latest result (`evals/results-2026-10-03.md`, `gemini-2.5-flash`): 10/10 cases pass with the right procedure cited and 18/18 facts correct. The same model answering closed-book got 3/18 facts. These 10 cases were also used while tuning retrieval, so treat this as a regression set rather than a held-out benchmark.
+
+The one-page proposal for the Govern is in `docs/pitch.md`.
