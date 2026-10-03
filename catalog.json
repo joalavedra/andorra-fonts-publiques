@@ -310,7 +310,7 @@
       ],
       "summary": "Searchable HTML catalog of 645 administrative procedures in Catalan, Spanish and French.",
       "alerts": [
-        "GET /search/?text=vehicle&q=%3Arelevance returns 645 procedures, while GET /search/?text=vehicle returns 45; omit q from text searches."
+        "GET /search/?text=vehicle&q=%3Arelevance ignores text, returns 645 procedures and has unstable relevance ordering; GET /search/?text=vehicle returns 45."
       ],
       "access": [
         "html"
@@ -354,7 +354,7 @@
         "localized-route"
       ],
       "gotchas": [
-        "Relevance-sorted paging changes order between requests; enumerate with q=:name-asc until 645 unique procedure codes are collected.",
+        "The text parameter is ignored whenever q is set; relevance-sorted paging changes order between requests. Search with text and no q, and enumerate with q=:name-asc until the reported total is reached.",
         "Sitemap /tramits/sitemap.xml is an empty sitemap index; enumerate by paging search until no new procedure codes appear.",
         "Spanish and French variants use lang=es or lang=fr; GV000484 redirects to a code-only localized path such as /tramits//p/GV000484?lang=es.",
         "The Govern's rights notice prohibits republication without prior written consent, so only fetch live and cite links."
@@ -442,6 +442,73 @@
       ],
       "status": "active",
       "verified": "2026-10-02"
+    },
+    {
+      "id": "govern-ad",
+      "name": "Govern d'Andorra information pages",
+      "org": "Govern d'Andorra",
+      "sector": "public-services",
+      "tags": [
+        "government",
+        "information",
+        "procedures",
+        "citizenship",
+        "services",
+        "policy"
+      ],
+      "summary": "Liferay information pages from Govern d'Andorra, indexed by section headings and fetched live for cited content.",
+      "alerts": [],
+      "access": [
+        "html"
+      ],
+      "auth": "none",
+      "formats": [
+        "html",
+        "xml"
+      ],
+      "update": "irregular",
+      "coverage": "Public information pages in the Catalan sitemap, including thematic and ministry pages.",
+      "license": "All rights reserved under Govern d'Andorra terms; this project fetches pages live and cites them, and does not redistribute page content. Its local index stores titles, URLs and section headings only.",
+      "license_url": "https://www.govern.ad/",
+      "base_url": "https://www.govern.ad/",
+      "docs_url": "https://www.govern.ad/ca/sitemap.xml",
+      "endpoints": [
+        {
+          "path": "/ca/sitemap.xml",
+          "method": "GET",
+          "desc": "List Catalan thematic and ministry pages with sitemap last-modified dates.",
+          "example": "curl -sS \"https://www.govern.ad/ca/sitemap.xml\"",
+          "returns": "Sitemap XML with page URLs and lastmod values; news URLs under /ca/w/ can be excluded."
+        },
+        {
+          "path": "/ca/{page-path}",
+          "method": "GET",
+          "desc": "Retrieve a live Govern information page and parse its Liferay content sections.",
+          "example": "curl -L \"https://www.govern.ad/ca/ministeris-i-secretaries-d-estat/ministeri-de-justicia-i-interior/passaports\"",
+          "returns": "Page title, description, language, final URL and titled article-section text."
+        }
+      ],
+      "quirks": [
+        "html-sections"
+      ],
+      "gotchas": [
+        "The root sitemap.xml is an index of per-layout sitemaps that are empty; use /ca/sitemap.xml and index only Catalan pages.",
+        "The Catalan sitemap is stale; in a 30-URL sample, 18 returned 200, 10 redirected and 2 returned 404, so keep final URLs and drop errors.",
+        "Spanish, French and English sitemaps contain only 70–103 URLs each and are not a complete catalog.",
+        "robots.txt disallows /cerca?q=; do not use Govern's site search.",
+        "Liferay content lives in journal-content-article blocks; omit Prefooter, Redes sociales, -Tabs and empty sections.",
+        "Page titles use the - Govern d’Andorra suffix; local index entries may contain only titles, URLs and section headings."
+      ],
+      "tips": [
+        "Fetch page bodies live, cite their final official URLs and do not redistribute their content.",
+        "Use content sections such as Import as evidence rather than page-navigation text."
+      ],
+      "related": [
+        "e-tramits",
+        "transparencia"
+      ],
+      "status": "degraded",
+      "verified": "2026-10-03"
     },
     {
       "id": "meteo-ad",

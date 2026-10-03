@@ -5,7 +5,7 @@ sector: public-services
 tags: [procedures, administration, permits, services]
 summary: Searchable HTML catalog of 645 administrative procedures in Catalan, Spanish and French.
 alerts:
-  - GET /search/?text=vehicle&q=%3Arelevance returns 645 procedures, while GET /search/?text=vehicle returns 45; omit q from text searches.
+  - GET /search/?text=vehicle&q=%3Arelevance ignores text, returns 645 procedures and has unstable relevance ordering; GET /search/?text=vehicle returns 45.
 access: [html]
 auth: none
 formats: [html, pdf]
@@ -33,7 +33,7 @@ endpoints:
     returns: Twenty HTML procedure cards per page and a total-result count; inventory contains 645 procedures.
 quirks: [html-sections, localized-route]
 gotchas:
-  - Relevance-sorted paging changes order between requests; enumerate with q=:name-asc until 645 unique procedure codes are collected.
+  - The text parameter is ignored whenever q is set; relevance-sorted paging changes order between requests. Search with text and no q, and enumerate with q=:name-asc until the reported total is reached.
   - Sitemap /tramits/sitemap.xml is an empty sitemap index; enumerate by paging search until no new procedure codes appear.
   - Spanish and French variants use lang=es or lang=fr; GV000484 redirects to a code-only localized path such as /tramits//p/GV000484?lang=es.
   - The Govern's rights notice prohibits republication without prior written consent, so only fetch live and cite links.

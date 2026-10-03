@@ -1,0 +1,41 @@
+id: govern-ad
+name: Govern d'Andorra information pages
+org: Govern d'Andorra
+sector: public-services
+tags: [government, information, procedures, citizenship, services, policy]
+summary: Liferay information pages from Govern d'Andorra, indexed by section headings and fetched live for cited content.
+alerts: []
+access: [html]
+auth: none
+formats: [html, xml]
+update: irregular
+coverage: Public information pages in the Catalan sitemap, including thematic and ministry pages.
+license: All rights reserved under Govern d'Andorra terms; this project fetches pages live and cites them, and does not redistribute page content. Its local index stores titles, URLs and section headings only.
+license_url: https://www.govern.ad/
+base_url: https://www.govern.ad/
+docs_url: https://www.govern.ad/ca/sitemap.xml
+endpoints:
+  - path: /ca/sitemap.xml
+    method: GET
+    desc: List Catalan thematic and ministry pages with sitemap last-modified dates.
+    example: 'curl -sS "https://www.govern.ad/ca/sitemap.xml"'
+    returns: Sitemap XML with page URLs and lastmod values; news URLs under /ca/w/ can be excluded.
+  - path: /ca/{page-path}
+    method: GET
+    desc: Retrieve a live Govern information page and parse its Liferay content sections.
+    example: 'curl -L "https://www.govern.ad/ca/ministeris-i-secretaries-d-estat/ministeri-de-justicia-i-interior/passaports"'
+    returns: Page title, description, language, final URL and titled article-section text.
+quirks: [html-sections]
+gotchas:
+  - The root sitemap.xml is an index of per-layout sitemaps that are empty; use /ca/sitemap.xml and index only Catalan pages.
+  - The Catalan sitemap is stale; in a 30-URL sample, 18 returned 200, 10 redirected and 2 returned 404, so keep final URLs and drop errors.
+  - Spanish, French and English sitemaps contain only 70–103 URLs each and are not a complete catalog.
+  - robots.txt disallows /cerca?q=; do not use Govern's site search.
+  - Liferay content lives in journal-content-article blocks; omit Prefooter, Redes sociales, -Tabs and empty sections.
+  - Page titles use the - Govern d’Andorra suffix; local index entries may contain only titles, URLs and section headings.
+tips:
+  - Fetch page bodies live, cite their final official URLs and do not redistribute their content.
+  - Use content sections such as Import as evidence rather than page-navigation text.
+related: [e-tramits, transparencia]
+status: degraded
+verified: "2026-10-03"
