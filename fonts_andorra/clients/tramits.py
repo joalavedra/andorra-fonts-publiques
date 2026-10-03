@@ -21,10 +21,24 @@ LOGIN_CTA_RE = re.compile(
     r"\s*Cal iniciar sessió per fer el tràmit\s+Sol·licitar-ho ara\s*$",
     re.IGNORECASE,
 )
+ACCESS_CTA_RE = re.compile(
+    r"\s*(?:"
+    r"Podeu accedir al tràmit des del següent enllaç"
+    r"|Puede acceder al trámite (?:desde|a través de) (?:el siguiente enlace|este enlace)"
+    r"|Vous pouvez accéder à (?:la démarche|la procédure) "
+    r"(?:depuis|à partir de|via) (?:le lien suivant|ce lien)"
+    r"|You can access the procedure (?:from|via) (?:the following link|this link)"
+    r")\s*[.!?…,:;]*\s*$",
+    re.IGNORECASE,
+)
 
 
 def _text(value: str) -> str:
     return " ".join(value.split())
+
+
+def _clean_access_cta(value: str) -> str:
+    return _text(ACCESS_CTA_RE.sub("", value))
 
 
 def _section_name(value: str) -> str:
@@ -215,7 +229,7 @@ def procedure(code_or_url: str, lang: str = "ca") -> dict:
     sections = {}
     for heading, parts in parsed.sections.items():
         name = _section_name(heading)
-        value = _text(" ".join(parts))
+        value = _clean_access_cta(" ".join(parts))
         if not value or name in {"canviar representat", "portal de transparencia"}:
             continue
         if name == "temps mitja de presentacio del tramit":

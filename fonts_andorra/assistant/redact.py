@@ -14,10 +14,18 @@ PATTERNS = [
         ),
     ),
     ("NRT", re.compile(r"\b[A-Z]\d{6}[A-Z]\b", re.IGNORECASE)),
-    ("PHONE", re.compile(r"(?<![\w])(?:\+\d{1,3}[\s().-]?)?(?:\d[\s().-]?){6,11}\d(?!\w)")),
+    (
+        "PHONE",
+        re.compile(
+            r"(?<![\w/])(?:\+\d{1,3}[\s()./-]?)?"
+            r"(?:\d[\s()./-]?){6,11}\d(?![\w/]|[/.]\d)"
+        ),
+    ),
     ("PASSPORT", re.compile(r"\b(?:[A-Z]{2}\d{7,9}|[A-Z]\d{7,9})\b", re.IGNORECASE)),
 ]
-DATE_LIKE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+DATE_LIKE = re.compile(
+    r"^(?:\d{1,2}([-/.])\d{1,2}\1\d{4}|\d{4}([-/.])\d{1,2}\2\d{1,2})$"
+)
 
 
 def redact(text: str) -> tuple[str, int]:
