@@ -125,8 +125,36 @@ def test_tramits_procedure_parser_handles_sections(monkeypatch):
     assert result["code"] == "GV000484"
     assert result["title"] == "Example procedure"
     assert result["max_resolution"] == "60 days"
+    assert result["application_period"] == "Tot l’any."
     assert result["online_available"] is False
     assert result["appointment_required"] is True
+    assert "Portal de transparència" not in result["sections"]
+
+
+def test_tramits_procedure_parser_detects_online_login_cta(monkeypatch):
+    content = """<!doctype html>
+    <html><body>
+      <h1>Online procedure</h1>
+      <h2>Temps mitjà de presentació del tràmit</h2>
+      <p>25 minut(s) Cal iniciar sessió per fer el tràmit Sol·licitar-ho ara</p>
+    </body></html>"""
+    parsed = tramits._Page()
+    parsed.feed(content)
+    monkeypatch.setattr(
+        tramits,
+        "_page",
+        lambda path, params=None: (
+            "https://www.e-tramits.ad/tramits/online/p/GV000314",
+            content,
+            parsed,
+        ),
+    )
+
+    result = tramits.procedure("https://www.e-tramits.ad/tramits/online/p/GV000314")
+
+    assert result["sections"]["Temps mitjà de presentació del tràmit"] == "25 minut(s)"
+    assert result["online_available"] is True
+    assert result["appointment_required"] is False
 
 
 def test_tramits_list_all_uses_stable_sort_until_total(monkeypatch, tmp_path):

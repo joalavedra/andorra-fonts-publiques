@@ -32,6 +32,60 @@ def _token_matches(left: str, right: str) -> bool:
     return left == right or (len(left) >= 5 and len(right) >= 5 and left[:5] == right[:5])
 
 
+def _section_name(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", normalize(value)).strip()
+
+
+def _is_description_heading(heading: str) -> bool:
+    name = _section_name(heading)
+    return any(name == term or name.startswith(f"{term} ") for term in (
+        "descripcio",
+        "descripcion",
+        "description",
+    ))
+
+
+def _is_key_fact_heading(heading: str) -> bool:
+    name = _section_name(heading)
+    return (
+        name in {"preu", "precio", "prix"}
+        or ("resoluc" in name and any(term in name for term in ("maxim", "maximo", "maximum")))
+        or (
+            any(term in name for term in ("periode", "periodo"))
+            and any(term in name for term in ("demanar", "pedir", "demande", "demander"))
+        )
+    )
+
+
+def _procedure_passage(detail: dict, fallback_title: str = "", max_chars: int = 2500) -> str:
+    facts = [
+        ("Title", detail.get("title") or fallback_title),
+        ("Price", detail.get("price")),
+        ("Maximum resolution time", detail.get("max_resolution")),
+        ("Application period", detail.get("application_period")),
+        ("Online available", detail.get("online_available")),
+        ("Appointment required", detail.get("appointment_required")),
+    ]
+    header = "\n".join(
+        f"{label}: {value}"
+        for label, value in facts
+        if value is not None and str(value).strip()
+    )
+    sections = [
+        (heading, text)
+        for heading, text in detail.get("sections", {}).items()
+        if text and not _is_key_fact_heading(heading)
+    ]
+    descriptions = [item for item in sections if _is_description_heading(item[0])]
+    remaining = [item for item in sections if not _is_description_heading(item[0])]
+    body = "\n".join(f"{heading}: {text}" for heading, text in [*descriptions, *remaining])
+    if not body or len(header) >= max_chars:
+        return header
+    if not header:
+        return body[:max_chars]
+    return f"{header}\n{body[:max_chars - len(header) - 1]}"
+
+
 def _rank_candidates(
     items: list[dict],
     keywords: list[str],
@@ -110,19 +164,9 @@ def retrieve(question: str) -> list[Source]:
         except (requests.RequestException, RuntimeError, ValueError) as exc:
             logger.debug("Procedure retrieval failed: %s", exc)
             continue
-        text_parts = []
-        if detail.get("max_resolution"):
-            text_parts.append(f"Maximum resolution time: {detail['max_resolution']}")
-        if detail.get("price"):
-            text_parts.append(f"Price: {detail['price']}")
-        if detail.get("online_available") is not None:
-            text_parts.append(f"Online available: {detail['online_available']}")
-        if detail.get("appointment_required") is not None:
-            text_parts.append(f"Appointment required: {detail['appointment_required']}")
-        text_parts.extend(f"{heading}: {value}" for heading, value in detail["sections"].items())
-        text = "\n".join(text_parts)
-        retrieved.append(Source(len(retrieved) + 1, detail.get("title") or item.get("title") or item["code"],
-                                detail["url"], text[:2500]))
+        title = detail.get("title") or item.get("title") or item["code"]
+        text = _procedure_passage(detail, title)
+        retrieved.append(Source(len(retrieved) + 1, title, detail["url"], text))
     if re.search(
         r"\b(law|legal|regulation|reglament|regulacion|llei|ley|loi|decret|decreto|normativa)\b",
         normalize(question),

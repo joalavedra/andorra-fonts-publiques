@@ -65,15 +65,11 @@ def test_keyword_generation_filters_stopwords_and_uses_procedure_title_prompt(mo
 
     assert keywords == ["targeta blava", "horaris comercials", "ampliació horaris", "matrícula"]
     assert "sol·licitud" in captured["prompt"]
-    assert "first car registration" in captured["prompt"]
-    assert "shop opening hours" in captured["prompt"]
-    assert "carnet de xofer de taxi" in captured["prompt"]
-    assert "duplicat tarja immigració" in captured["prompt"]
-    assert "ajut Pla Engega" in captured["prompt"]
+    assert "fishing licence" in captured["prompt"]
     assert "do not invent another topic" in captured["prompt"]
 
 
-def test_retrieve_places_maximum_resolution_time_first(monkeypatch):
+def test_retrieve_places_key_facts_first(monkeypatch):
     item = {
         "code": "GV000484",
         "title": "Residència i treball: autorització inicial",
@@ -86,6 +82,7 @@ def test_retrieve_places_maximum_resolution_time_first(monkeypatch):
         "sections": {"Detall": "Long procedure text."},
         "price": "190,96 €",
         "max_resolution": "60 dia/dies hàbil(s)",
+        "application_period": "Tot l’any.",
         "online_available": False,
         "appointment_required": True,
     }
@@ -96,7 +93,45 @@ def test_retrieve_places_maximum_resolution_time_first(monkeypatch):
 
     sources = retrieve.retrieve("Quant triga l'autorització inicial?")
 
-    assert sources[0].text.startswith("Maximum resolution time: 60 dia/dies hàbil(s)")
+    assert sources[0].text.startswith(
+        "Title: Residència i treball: autorització inicial\n"
+        "Price: 190,96 €\n"
+        "Maximum resolution time: 60 dia/dies hàbil(s)\n"
+        "Application period: Tot l’any.\n"
+        "Online available: False\n"
+        "Appointment required: True"
+    )
+
+
+def test_procedure_passage_preserves_key_facts_before_long_sections():
+    detail = {
+        "title": "PLA ENGEGA",
+        "price": "0,00 €",
+        "max_resolution": "2 mesos",
+        "application_period": "Del 19/03/2026 al 15/11/2026.",
+        "online_available": True,
+        "appointment_required": False,
+        "sections": {
+            "Representant": "r" * 3000,
+            "Descripció": "Official description.",
+            "Normativa": "n" * 3000,
+        },
+    }
+
+    passage = retrieve._procedure_passage(detail)
+
+    expected_header = (
+        "Title: PLA ENGEGA\n"
+        "Price: 0,00 €\n"
+        "Maximum resolution time: 2 mesos\n"
+        "Application period: Del 19/03/2026 al 15/11/2026.\n"
+        "Online available: True\n"
+        "Appointment required: False"
+    )
+    assert passage.startswith(expected_header)
+    assert expected_header in passage
+    assert passage.index("Descripció: Official description.") < passage.index("Representant:")
+    assert len(passage) <= 2500
 
 
 def test_retrieve_fetches_five_procedures_and_caps_passages(monkeypatch):

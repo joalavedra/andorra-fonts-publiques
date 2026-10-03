@@ -9,6 +9,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
 
+from fonts_andorra.catalog import normalize
 from fonts_andorra.clients import http
 
 BASE = "https://www.e-tramits.ad/tramits"
@@ -16,10 +17,27 @@ SEARCH_URL = f"{BASE}/search/"
 CACHE_PATH = Path.home() / ".cache" / "fonts-andorra" / "tramits.json"
 CODE_RE = re.compile(r"/p/([^/?#]+)", re.IGNORECASE)
 TOTAL_RE = re.compile(r"([\d.,]+)\s+resultats?", re.IGNORECASE)
+LOGIN_CTA_RE = re.compile(
+    r"\s*Cal iniciar sessió per fer el tràmit\s+Sol·licitar-ho ara\s*$",
+    re.IGNORECASE,
+)
 
 
 def _text(value: str) -> str:
     return " ".join(value.split())
+
+
+def _section_name(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", normalize(value)).strip()
+
+
+def _is_application_period_heading(heading: str) -> bool:
+    name = _section_name(heading)
+    return (
+        ("periode de l any" in name and "demanar" in name)
+        or ("periodo del ano" in name and "pedir" in name)
+        or ("periode de l annee" in name and ("demande" in name or "demander" in name))
+    )
 
 
 class _Page(HTMLParser):
@@ -194,16 +212,22 @@ def procedure(code_or_url: str, lang: str = "ca") -> dict:
         url = matches[0]["url"]
     url = _localized_url(url, lang)
     final_url, _, parsed = _page(url)
-    sections = {
-        heading: _text(" ".join(parts))
-        for heading, parts in parsed.sections.items()
-        if _text(" ".join(parts)) and heading.lower() != "canviar representat"
-    }
+    sections = {}
+    for heading, parts in parsed.sections.items():
+        name = _section_name(heading)
+        value = _text(" ".join(parts))
+        if not value or name in {"canviar representat", "portal de transparencia"}:
+            continue
+        if name == "temps mitja de presentacio del tramit":
+            value = LOGIN_CTA_RE.sub("", value)
+        if value:
+            sections[heading] = value
     title = next((anchor["text"] for anchor in parsed.anchors if CODE_RE.search(anchor.get("href") or "")
                   and anchor["text"]), "")
     if not title:
         title = next((heading for heading in parsed.headings
-                      if heading and heading.lower() not in {"canviar representat", "portal de transparència"}
+                      if heading and _section_name(heading) not in
+                      {"canviar representat", "portal de transparencia"}
                       and not heading.lower().startswith("tr.")), "")
     title = title or catalog_title or code
     documents = []
@@ -212,11 +236,13 @@ def procedure(code_or_url: str, lang: str = "ca") -> dict:
         if href.lower().endswith(".pdf") or "document" in anchor["text"].lower() or "formulari" in anchor["text"].lower():
             documents.append({"title": anchor["text"] or href.rsplit("/", 1)[-1], "url": urljoin(final_url, href)})
     price = next((value for heading, value in sections.items()
-                  if heading.lower() in {"preu", "precio", "prix"}), None)
+                  if _section_name(heading) in {"preu", "precio", "prix"}), None)
     max_resolution = next((value for heading, value in sections.items()
-                          if any(term in heading.lower() for term in
-                                 ("termini de resolució màxim", "plazo de resolución máximo",
-                                  "délai de résolution maximum", "resolution.time.title"))), None)
+                          if any(term in _section_name(heading) for term in
+                                 ("termini de resolucio maxim", "plazo de resolucion maximo",
+                                  "delai de resolution maximum", "resolution time title"))), None)
+    application_period = next((value for heading, value in sections.items()
+                               if _is_application_period_heading(heading)), None)
     if max_resolution:
         duration = re.search(
             r"\b\d+(?:[.,]\d+)?\s*(?:dia/dies|dies|dia|días?|jours?)"
@@ -226,26 +252,25 @@ def procedure(code_or_url: str, lang: str = "ca") -> dict:
         )
         if duration:
             max_resolution = duration.group(0)
-    full_text = " ".join(parsed.total_text).lower()
+    full_text = _section_name(" ".join(parsed.total_text))
     online = False if any(term in full_text for term in (
-        "no disponible en línia", "no es pot fer en línia", "no disponible en línea",
-        "no està disponible en línia", "no está disponible en línea",
-        "non disponible en ligne", "ne peut pas être effectué en ligne",
+        "el servei no esta disponible en linia",
+        "el servicio no esta disponible en linea",
+        "le service n est pas disponible en ligne",
     )) else (
         True if any(term in full_text for term in (
-            "disponible en línia", "tràmit en línia", "disponible en línea", "trámite en línea",
-            "disponible en ligne",
+            "sol licitar ho ara",
+            "cal iniciar sessio per fer el tramit",
+            "solicitarlo ahora",
+            "demander maintenant",
         )) else None
     )
-    appointment_text = next((value.lower() for heading, value in sections.items()
-                             if "cita" in heading.lower() or "rendez" in heading.lower()), full_text)
-    appointment = False if any(term in appointment_text for term in (
-        "no cal", "no és necessària", "no obligatòria", "no es necesaria", "no es necesario",
-        "no es obligatoria", "no es obligatorio", "no es obligatoire",
-    )) else True if any(term in appointment_text for term in (
-        "obligatòria", "necessària", "cal demanar", "demaneu cita", "demana cita",
-        "obligatoria", "obligatorio", "obligatoire", "necesaria",
-    )) else None
+    appointment = any(term in full_text for term in (
+        "demaneu cita previa",
+        "cal demanar cita previa",
+        "pida cita previa",
+        "demandez un rendez vous",
+    ))
     for raw in parsed.jsonld:
         try:
             structured = json.loads(raw)
@@ -263,6 +288,7 @@ def procedure(code_or_url: str, lang: str = "ca") -> dict:
         "documents": documents,
         "price": price,
         "max_resolution": max_resolution,
+        "application_period": application_period,
         "online_available": online,
         "appointment_required": appointment,
     }

@@ -73,11 +73,9 @@ def keywords(question: str) -> list[str]:
         "unrelated procedures. Usually return two variants of that one procedure. "
         "Exclude words about price, cost, time, deadlines, how, or generic procedure/request terms "
         "(preu, cost, termini, temps, quant, tràmit, procediment, sol·licitud). "
-        "Examples: first car registration -> [\"matriculació vehicle\", \"primera matriculació\"]; "
-        "shop opening hours -> [\"horaris comercials\", \"ampliació horaris\"]; "
-        "taxi driver's licence -> [\"carnet de xofer de taxi\", \"llicència de taxi\"]; "
-        "duplicate lost immigration card -> [\"duplicat tarja immigració\", \"duplicat targeta immigració\"]; "
-        "Pla Engega electric vehicle grant -> [\"ajut Pla Engega\", \"ajut vehicle elèctric\"]. "
+        "Examples: fishing licence -> [\"llicència de pesca\", \"permís de pesca\"]; "
+        "dissolve a company -> [\"dissolució societat\", \"certificat de dissolució\"]; "
+        "register a boat -> [\"matriculació embarcació\", \"registre d'embarcacions\"]. "
         "Output only the JSON array.\nQuestion: " + safe_question,
         system_instruction=(
             "Return only 2–4 concise Catalan title phrases for the procedure the question is actually about. "
