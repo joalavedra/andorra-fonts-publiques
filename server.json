@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.joalavedra/andorra-fonts-publiques",
+  "title": "Andorra public sources",
+  "description": "Andorra public data: BOPA bulletin, statistics, maps, e-tramits procedures and govern.ad pages",
+  "repository": {
+    "url": "https://github.com/joalavedra/andorra-fonts-publiques",
+    "source": "github"
+  },
+  "version": "0.2.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "fonts-andorra",
+      "version": "0.2.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

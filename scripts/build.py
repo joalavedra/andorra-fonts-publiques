@@ -39,10 +39,11 @@ def source_table(sources: list[dict]) -> str:
 def main() -> None:
     sources = load_sources()
     dead_routes = yaml.safe_load((ROOT / "indices" / "dead-routes.yaml").read_text(encoding="utf-8"))
-    (ROOT / "catalog.json").write_text(
-        json.dumps({"sources": sources, "dead_routes": dead_routes}, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    catalog_json = json.dumps(
+        {"sources": sources, "dead_routes": dead_routes}, ensure_ascii=False, indent=2
+    ) + "\n"
+    for catalog_path in (ROOT / "catalog.json", ROOT / "fonts_andorra" / "data" / "catalog.json"):
+        catalog_path.write_text(catalog_json, encoding="utf-8")
     short_lines = [
         "# Andorra public sources",
         "",

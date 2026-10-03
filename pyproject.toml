@@ -4,17 +4,37 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fonts-andorra"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Educational clients and an MCP catalog for public sources in Andorra"
 readme = "README.md"
 license = "CC0-1.0"
 requires-python = ">=3.10"
 dependencies = ["mcp>=1.0,<2", "pyyaml>=6", "requests>=2.31"]
+authors = [{name = "Joan Alavedra"}]
+keywords = ["Andorra", "public data", "MCP", "Catalan", "open data"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Natural Language :: Catalan",
+    "Natural Language :: English",
+    "Natural Language :: French",
+    "Natural Language :: Spanish",
+]
+
+[project.urls]
+Homepage = "https://github.com/joalavedra/andorra-fonts-publiques"
+Repository = "https://github.com/joalavedra/andorra-fonts-publiques"
+Issues = "https://github.com/joalavedra/andorra-fonts-publiques/issues"
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]
 
 [project.scripts]
+fonts-andorra = "fonts_andorra.mcp_server:main"
 fonts-andorra-mcp = "fonts_andorra.mcp_server:main"
 fonts-andorra-ask = "fonts_andorra.assistant.cli:main"
 
@@ -22,7 +42,10 @@ fonts-andorra-ask = "fonts_andorra.assistant.cli:main"
 include = ["fonts_andorra*"]
 
 [tool.setuptools.package-data]
-fonts_andorra = ["data/index.json"]
+fonts_andorra = ["data/*.json"]
+
+[tool.setuptools.dynamic]
+version = {attr = "fonts_andorra.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
