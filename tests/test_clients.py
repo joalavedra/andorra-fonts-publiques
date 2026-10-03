@@ -103,6 +103,7 @@ def test_tramits_search_parser_handles_results(monkeypatch):
     assert items
     assert requested["text"] == "vehicle"
     assert "q" not in requested
+    assert requested == {"text": "vehicle"}
     assert [item["code"] for item in items] == ["GV000001", "TR-IEI-FIRST"]
     assert all(item["url"] for item in items)
     requested.clear()

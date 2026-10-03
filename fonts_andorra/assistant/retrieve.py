@@ -1,4 +1,4 @@
-"""Retrieve official procedure and bulletin passages for a question."""
+"""Retrieve official procedure, Govern page, and bulletin passages for a question."""
 
 from __future__ import annotations
 
@@ -8,10 +8,11 @@ from dataclasses import dataclass
 
 import requests
 
+from fonts_andorra import index
 from fonts_andorra.assistant import llm
 from fonts_andorra.assistant.redact import redact
 from fonts_andorra.catalog import normalize
-from fonts_andorra.clients import bopa, tramits
+from fonts_andorra.clients import bopa, govern, tramits
 
 logger = logging.getLogger(__name__)
 
@@ -86,10 +87,52 @@ def _procedure_passage(detail: dict, fallback_title: str = "", max_chars: int = 
     return f"{header}\n{body[:max_chars - len(header) - 1]}"
 
 
+def _govern_section_score(heading: str, text: str, query_terms: set[str]) -> int:
+    heading_terms = set(index.tokenize(heading))
+    text_terms = set(index.tokenize(text))
+    normalized = normalize(text)
+    has_amount = bool(re.search(r"€|\beuros?\b|%", normalized, re.IGNORECASE))
+    has_duration = bool(re.search(
+        r"\b\d+(?:[.,]\d+)?\s*(?:anys?|dies?|mesos?|hores?|years?|days?|months?)\b",
+        normalized,
+        re.IGNORECASE,
+    ))
+    return (
+        2 * len(query_terms & heading_terms)
+        + len(query_terms & text_terms)
+        + 2 * int(has_amount or has_duration)
+    )
+
+
+def _govern_passage(detail: dict, query: str, max_chars: int = 4000) -> str:
+    lines = [f"Title: {detail.get('title') or 'Govern d’Andorra page'}"]
+    description = detail.get("description", "")
+    if description:
+        lines.append(f"Description: {description[:1500]}")
+    query_terms = set(index.tokenize(query))
+    sections = [
+        (heading, text, order)
+        for order, (heading, text) in enumerate(detail.get("sections", {}).items())
+        if text
+    ]
+    sections.sort(
+        key=lambda item: (-_govern_section_score(item[0], item[1], query_terms), item[2])
+    )
+    passage = "\n".join(lines)
+    for heading, text, _ in sections:
+        label = f"{heading}: "
+        remaining = max_chars - len(passage) - 1
+        if remaining <= len(label):
+            break
+        excerpt = text[:min(1500, remaining - len(label))]
+        passage += f"\n{label}{excerpt}"
+    return passage[:max_chars]
+
+
 def _rank_candidates(
     items: list[dict],
     keywords: list[str],
-    site_ranks: dict[str, tuple[int, int]] | None = None,
+    site_ranks: dict[str, tuple[int, ...]] | None = None,
     fallback_ranks: dict[str, int] | None = None,
 ) -> list[dict]:
     terms = set()
@@ -132,24 +175,39 @@ def retrieve(question: str) -> list[Source]:
         keywords = []
     keywords = llm.clean_keywords(keywords)
     candidates: dict[str, dict] = {}
-    site_ranks: dict[str, tuple[int, int]] = {}
+    site_ranks: dict[str, tuple[int, ...]] = {}
+    fallback_ranks: dict[str, int] = {}
     site_order = 0
     for keyword in keywords[:4]:
         try:
-            for result_rank, item in enumerate(tramits.search(keyword)):
+            results = index.search(keyword, limit=8, source="e-tramits")
+            for result_rank, result in enumerate(results):
+                item = dict(result)
+                code = item.get("id") or item.get("code")
+                if not code:
+                    continue
+                item["code"] = code
+                candidates.setdefault(code, item)
+                rank = (1, result_rank, site_order)
+                if code not in site_ranks or rank < site_ranks[code]:
+                    site_ranks[code] = rank
+                site_order += 1
+        except (RuntimeError, ValueError) as exc:
+            logger.debug("Procedure index search failed: %s", exc)
+        try:
+            results = tramits.search(keyword)
+            for result_rank, item in enumerate(results):
                 code = item.get("code")
                 if not code:
                     continue
                 candidates.setdefault(code, item)
-                rank = (result_rank, site_order)
+                rank = (0, result_rank, site_order)
                 if code not in site_ranks or rank < site_ranks[code]:
                     site_ranks[code] = rank
                 site_order += 1
         except (requests.RequestException, RuntimeError, ValueError) as exc:
-            logger.debug("Procedure search failed: %s", exc)
-            continue
+            logger.debug("Procedure site search failed: %s", exc)
     fallback_items = _fallback(keywords)
-    fallback_ranks = {}
     for rank, item in enumerate(fallback_items):
         code = item.get("code")
         if not code:
@@ -167,6 +225,21 @@ def retrieve(question: str) -> list[Source]:
         title = detail.get("title") or item.get("title") or item["code"]
         text = _procedure_passage(detail, title)
         retrieved.append(Source(len(retrieved) + 1, title, detail["url"], text))
+    govern_query = " ".join([*keywords, safe_question])
+    try:
+        govern_items = index.search(govern_query, limit=2, source="govern.ad")
+    except (RuntimeError, ValueError) as exc:
+        logger.debug("Govern index search failed: %s", exc)
+        govern_items = []
+    for item in govern_items:
+        try:
+            detail = govern.page(item["url"])
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Govern page retrieval failed: %s", exc)
+            continue
+        title = detail.get("title") or item.get("title") or "Govern d’Andorra page"
+        passage = _govern_passage(detail, govern_query)
+        retrieved.append(Source(len(retrieved) + 1, title, detail["url"], passage))
     if re.search(
         r"\b(law|legal|regulation|reglament|regulacion|llei|ley|loi|decret|decreto|normativa)\b",
         normalize(question),

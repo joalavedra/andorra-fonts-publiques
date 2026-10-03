@@ -1,15 +1,32 @@
 from fonts_andorra.assistant import retrieve
 
 
-def test_local_procedure_fallback_ranks_title_and_slug_overlap(monkeypatch):
+def test_local_procedure_index_ranks_title_and_slug_overlap(monkeypatch):
     procedures = [
-        {"code": "GV000866", "title": "Autorització de taxi", "url": "https://example.ad/taxi"},
-        {"code": "GV000484", "title": "Residència i treball: autorització inicial",
+        {"id": "GV000866", "title": "Autorització de taxi", "url": "https://example.ad/taxi"},
+        {"id": "GV000484", "title": "Residència i treball: autorització inicial",
          "url": "https://example.ad/residencia-treball"},
     ]
-    monkeypatch.setattr(retrieve.tramits, "list_all", lambda: procedures)
-    result = retrieve._fallback(["autorització inicial"])
-    assert result[0]["code"] == "GV000484"
+    monkeypatch.setattr(retrieve.llm, "keywords", lambda question: ["autorització inicial"])
+    monkeypatch.setattr(
+        retrieve.index,
+        "search",
+        lambda query, limit, source: procedures if source == "e-tramits" else [],
+    )
+    monkeypatch.setattr(retrieve.tramits, "search", lambda keyword: [])
+    monkeypatch.setattr(retrieve, "_fallback", lambda keywords: [])
+    detail = {
+        "title": procedures[1]["title"],
+        "url": procedures[1]["url"],
+        "sections": {},
+        "price": None,
+        "max_resolution": None,
+    }
+    monkeypatch.setattr(retrieve.tramits, "procedure", lambda url: detail)
+
+    result = retrieve.retrieve("Initial residence and work permit")
+
+    assert result[0].url == "https://example.ad/residencia-treball"
 
 
 RANKING_PROCEDURES = [
@@ -29,7 +46,7 @@ def test_keyword_ranking_finds_blue_card_initial_request_and_shop_hours():
     assert ranked[0]["code"] == "GV000278"
 
 
-def test_keyword_ranking_preserves_site_order_before_fallback():
+def test_keyword_ranking_preserves_index_order_before_unranked_candidates():
     items = [RANKING_PROCEDURES[1], RANKING_PROCEDURES[0]]
     ranked = retrieve._rank_candidates(
         items,
@@ -43,9 +60,21 @@ def test_keyword_ranking_preserves_site_order_before_fallback():
         [RANKING_PROCEDURES[0], RANKING_PROCEDURES[1]],
         ["targeta blava"],
         site_ranks={"GV000037": (5, 0)},
-        fallback_ranks={"GV000039": 0},
     )
     assert [item["code"] for item in ranked] == ["GV000037", "GV000039"]
+
+
+def test_local_fallback_ranks_cached_titles_and_slugs(monkeypatch):
+    procedures = [
+        {"code": "GV000177", "title": "Crane permit", "url": "https://example.ad/grua"},
+        {"code": "GV000278", "title": "Ampliació d'horari comercial",
+         "url": "https://example.ad/horaris-comercials"},
+    ]
+    monkeypatch.setattr(retrieve.tramits, "list_all", lambda: procedures)
+
+    result = retrieve._fallback(["horaris comercials"])
+
+    assert result[0]["code"] == "GV000278"
 
 
 def test_keyword_generation_filters_stopwords_and_uses_procedure_title_prompt(monkeypatch):
@@ -87,7 +116,12 @@ def test_retrieve_places_key_facts_first(monkeypatch):
         "appointment_required": True,
     }
     monkeypatch.setattr(retrieve.llm, "keywords", lambda question: ["residència inicial"])
-    monkeypatch.setattr(retrieve.tramits, "search", lambda keyword: [item])
+    monkeypatch.setattr(
+        retrieve.index,
+        "search",
+        lambda query, limit, source: [item] if source == "e-tramits" else [],
+    )
+    monkeypatch.setattr(retrieve.tramits, "search", lambda keyword: [])
     monkeypatch.setattr(retrieve, "_fallback", lambda keywords: [])
     monkeypatch.setattr(retrieve.tramits, "procedure", lambda url: detail)
 
@@ -149,8 +183,18 @@ def test_retrieve_fetches_five_procedures_and_caps_passages(monkeypatch):
         "appointment_required": None,
     }
     fetched = []
+    site_searches = []
     monkeypatch.setattr(retrieve.llm, "keywords", lambda question: ["targeta blava"])
-    monkeypatch.setattr(retrieve.tramits, "search", lambda keyword: items)
+    monkeypatch.setattr(
+        retrieve.index,
+        "search",
+        lambda query, limit, source: items if source == "e-tramits" else [],
+    )
+    monkeypatch.setattr(
+        retrieve.tramits,
+        "search",
+        lambda keyword: site_searches.append(keyword) or [],
+    )
     monkeypatch.setattr(retrieve, "_fallback", lambda keywords: [])
     monkeypatch.setattr(retrieve.tramits, "procedure", lambda url: fetched.append(url) or detail)
 
@@ -158,4 +202,58 @@ def test_retrieve_fetches_five_procedures_and_caps_passages(monkeypatch):
 
     assert len(sources) == 5
     assert len(fetched) == 5
+    assert site_searches == ["targeta blava"]
     assert all(len(source.text) <= 2500 for source in sources)
+
+
+def test_retrieve_adds_govern_passage_and_prioritizes_amount_sections(monkeypatch):
+    procedure = {
+        "id": "GV000001",
+        "title": "Passport application",
+        "url": "https://www.e-tramits.ad/tramits/passport/p/GV000001",
+    }
+    page_item = {
+        "id": "/ca/tematiques/passaport",
+        "title": "Passaports",
+        "url": "https://www.govern.ad/ca/tematiques/passaport",
+    }
+    detail = {
+        "title": "Passport application",
+        "url": procedure["url"],
+        "sections": {},
+        "price": None,
+        "max_resolution": None,
+    }
+    page = {
+        "title": "Passaports",
+        "description": "Passport information from Govern d'Andorra.",
+        "url": page_item["url"],
+        "sections": {
+            "General information": "General administrative information. " * 100,
+            "Import": "Passaport: 49,31 euros for the ten-year passport.",
+        },
+    }
+    searches = []
+
+    def search(query, limit, source):
+        searches.append((query, limit, source))
+        return [procedure] if source == "e-tramits" else [page_item]
+
+    monkeypatch.setattr(retrieve.llm, "keywords", lambda question: ["passaport"])
+    monkeypatch.setattr(retrieve.index, "search", search)
+    monkeypatch.setattr(retrieve.tramits, "search", lambda keyword: [])
+    monkeypatch.setattr(retrieve, "_fallback", lambda keywords: [])
+    monkeypatch.setattr(retrieve.tramits, "procedure", lambda url: detail)
+    monkeypatch.setattr(retrieve.govern, "page", lambda url: page)
+
+    sources = retrieve.retrieve("Quin és l'import del passaport?")
+
+    assert [source.n for source in sources] == [1, 2]
+    assert sources[1].title == "Passaports"
+    assert sources[1].text.index("Import:") < sources[1].text.index("General information:")
+    assert "Description: Passport information" in sources[1].text
+    assert len(sources[1].text) <= 4000
+    assert searches == [
+        ("passaport", 8, "e-tramits"),
+        ("passaport Quin és l'import del passaport?", 2, "govern.ad"),
+    ]
