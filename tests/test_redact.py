@@ -17,6 +17,15 @@ def test_redacts_direct_identifiers_and_keeps_dates():
     assert "2026-10-02" in masked
 
 
+def test_preserves_numeric_dates_but_redacts_phone_numbers():
+    dates = "Del 23-09-2026 al 05-10-2026. 19/03/2026 15.11.2026"
+    assert redact(dates) == (dates, 0)
+
+    masked, count = redact("+376 123 456 and 12345678")
+    assert count == 2
+    assert masked == "[REDACTED_PHONE] and [REDACTED_PHONE]"
+
+
 def test_redact_counts_each_match():
     masked, count = redact("a@example.ad and b@example.ad")
     assert count == 2

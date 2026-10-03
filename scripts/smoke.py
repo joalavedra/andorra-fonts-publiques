@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
+import argparse
 import json
+import os
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -96,11 +98,17 @@ def _sanitize_feed(content: bytes) -> bytes:
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Run live source smoke checks.")
+    parser.add_argument("--out", type=Path, default=OUTPUT, help="Path for the smoke report.")
+    parser.add_argument("--no-fixtures", action="store_true", help="Do not write response fixtures.")
+    args = parser.parse_args(argv)
+
     sys.path.insert(0, str(ROOT))
     from fonts_andorra.clients import arcgis, bopa, estadistica, feeds, http, tramits
 
-    http.session.hooks.setdefault("response", []).append(_capture)
+    if not args.no_fixtures:
+        http.session.hooks.setdefault("response", []).append(_capture)
     lines = []
     errors = []
 
@@ -161,25 +169,32 @@ def main() -> int:
 
     if stats_rows is not None:
         run("statistics JSON-stat vs CSV values", lambda: _check_csv(estadistica, http, stats_rows))
-    ask_command = ROOT / ".venv" / "bin" / "fonts-andorra-ask"
-    try:
-        result = subprocess.run(
-            [str(ask_command), "Quant triga l'autorització inicial de residència i treball?", "--json"],
-            cwd=ROOT, text=True, capture_output=True, timeout=150, check=False,
-        )
-        if result.returncode:
-            raise RuntimeError(f"assistant exit {result.returncode}: {result.stderr.strip()}")
-        answer = json.loads(result.stdout)
-        lines.append("fonts-andorra-ask: " + json.dumps(answer, ensure_ascii=False))
-    except Exception as exc:  # noqa: BLE001
-        errors.append(f"fonts-andorra-ask: {type(exc).__name__}: {exc}")
-        lines.append(f"ERROR fonts-andorra-ask: {type(exc).__name__}: {exc}")
-
-    lines.append(f"fixture files captured: {sorted(path.name for path in FIXTURES.glob('*'))}")
+    if args.no_fixtures:
+        lines.append("fixture capture: SKIPPED (--no-fixtures)")
+    else:
+        lines.append(f"fixture files captured: {sorted(path.name for path in FIXTURES.glob('*'))}")
+    if os.environ.get("GEMINI_API_KEY"):
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "fonts_andorra.assistant.cli",
+                 "Quant triga l'autorització inicial de residència i treball?", "--json"],
+                cwd=ROOT, text=True, capture_output=True, timeout=150, check=False,
+            )
+            if result.returncode:
+                raise RuntimeError(f"assistant exit {result.returncode}")
+            answer = json.loads(result.stdout)
+            lines.append("fonts-andorra-ask: " + json.dumps(answer, ensure_ascii=False))
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"fonts-andorra-ask: {type(exc).__name__}: {exc}")
+            lines.append(f"ERROR fonts-andorra-ask: {type(exc).__name__}: {exc}")
+    else:
+        lines.append("fonts-andorra-ask: SKIPPED (GEMINI_API_KEY is not set)")
     if errors:
+        lines = [line for line in lines if not line.startswith("Failures:")]
         lines.append("Failures: " + " | ".join(errors))
-    OUTPUT.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"Saved smoke output to {OUTPUT}")
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"Saved smoke output to {args.out}")
     print("\n".join(lines))
     return 1 if errors else 0
 

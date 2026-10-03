@@ -1,0 +1,127 @@
+# Held-out cases: written after retrieval tuning ended and never used to tune prompts, ranking or passages.
+# Report the score as-is; if a case fails, fix the system on new cases, not by editing these.
+# Ground truth taken from the live e-tramits pages on 2026-10-02 (sections "Preu", "Termini de resolució màxim",
+# "Període de sol·licitud", availability line).
+# `expect: answer` (default) cases are scored like procedures.yaml.
+# `expect: abstain` cases ask for something no official source here covers: the answer must say the information
+# was not found (`abstain` regexes), must not state a euro amount, and must not cite non-existent sources.
+version: 2026-10-02
+cases:
+  - id: driving-licence-first
+    lang: en
+    question: "I just moved to Andorra and want to get my first driving licence here. How long can the administration take to issue it?"
+    code: GV000300
+    facts:
+      deadline: ['60\s*(working|business)\s*days', '60\s*(dies|días|days|jours)']
+  - id: driving-licence-stolen
+    lang: ca
+    question: "M'han robat la cartera amb el carnet de conduir. Quant em costarà tornar-lo a tenir i quant trigaran?"
+    code: GV000280
+    facts:
+      price: ['24[,.]66']
+      deadline: ['48\s*(h|hores|hours|horas|heures)']
+  - id: elderly-solidarity-pension
+    lang: es
+    question: "Mi madre es mayor y tiene pocos ingresos. ¿Puede pedir la pensión de solidaridad por internet y cuánto tardan en resolver?"
+    code: GV000049
+    facts:
+      deadline: ['2\s*(mes|mesos|months?|meses|mois)', '(dos|two|deux) (mesos|months|meses|mois)']
+      online: ['(en l[ií]nea|online|por internet|en ligne|telem[aà]tic)']
+  - id: large-family-first
+    lang: fr
+    question: "Nous avons trois enfants. Combien coûte la première demande de reconnaissance de famille nombreuse et quel est le délai ?"
+    code: GV000048
+    facts:
+      price: ['(?<![\d,.])0([,.]00)?\s*(€|euros?)', '€\s*0([,.]00)?(?!\d)', 'gratuit', 'sans frais', 'aucun (co[uû]t|frais)']
+      deadline: ['2\s*(mes|mesos|months?|meses|mois)', '(dos|two|deux) (mesos|months|meses|mois)']
+  - id: unemployment-aid
+    lang: ca
+    question: "M'he quedat sense feina sense voler-ho. Quant de temps té l'administració per resoldre l'ajut per desocupació?"
+    code: GV000043
+    facts:
+      deadline: ['2\s*(mes|mesos|months?|meses|mois)', '(dos|two|deux) (mesos|months|meses|mois)']
+  - id: drone-registration
+    lang: en
+    question: "I want to fly a drone in Andorra. What does the unmanned aircraft procedure cost?"
+    code: GV000310
+    facts:
+      price: ['8[,.]58']
+  - id: public-information-request
+    lang: es
+    question: "Quiero pedir al Gobierno acceso a un documento público. ¿Tiene coste y en cuánto tiempo deben responder?"
+    code: GV000751
+    facts:
+      price: ['(?<![\d,.])0([,.]00)?\s*(€|euros?)', '€\s*0([,.]00)?(?!\d)', 'gratu[ií]t', 'gratis', 'sin coste', 'no tiene (ning[uú]n )?coste']
+      deadline: ['60\s*(dies|días|days|jours)', 'sesenta d[ií]as']
+  - id: tax-debt-certificate
+    lang: ca
+    question: "Necessito un certificat de deute de Finances. El puc demanar per internet o he d'anar-hi?"
+    code: GV000653
+    facts:
+      in_person: ['cita pr[eè]via', 'presencial', 'no (est[aà]|es) disponible en l[ií]nia', 'no .{0,30}(en l[ií]nia|per internet|online)']
+  - id: foreign-investment
+    lang: en
+    question: "I'm a non-resident and want to buy an apartment in Andorra as an investment. What's the fee for the foreign-investment authorisation and how long does it take?"
+    code: GV001612
+    facts:
+      price: ['300\s*(€|euros?)', '€\s*300(?!\d)']
+      deadline: ['2\s*(mes|mesos|months?|meses|mois)', '(dos|two|deux) (mesos|months|meses|mois)']
+  - id: youth-emancipation
+    lang: ca
+    question: "Tinc 25 anys i vull independitzar-me. Fins quan puc demanar l'ajut del programa d'emancipació de joves?"
+    code: GV000061
+    facts:
+      period: ['0?5[-/.]10[-/.]2026', '5 d.octubre( de(l)? 2026)?']
+  - id: passport-nationality-certificate
+    lang: fr
+    question: "Pour mon passeport on me demande un certificat de nationalité. Combien coûte-t-il ?"
+    code: GV000451
+    facts:
+      price: ['8[,.]58']
+  - id: habitability-certificate
+    lang: es
+    question: "Vendo mi piso y me piden el certificado de habitabilidad. ¿Cuánto cuesta pedirlo online y cuánto tarda?"
+    code: GV000633
+    facts:
+      price: ['7[,.]50']
+      deadline: ['72\s*(h|hores|hours|horas|heures)']
+  - id: professional-artist
+    lang: en
+    question: "I'm a musician. Is there a fee to be accredited as a professional artist in Andorra, and how long does the decision take?"
+    code: GV001743
+    facts:
+      price: ['(?<![\d,.])0([,.]00)?\s*(€|euros?)', '€\s*0([,.]00)?(?!\d)', 'free', 'no (fee|cost|charge)']
+      deadline: ['60\s*(working|business)\s*days', '60\s*(dies|días|days|jours)']
+  - id: school-study-grant
+    lang: fr
+    question: "Quand pouvait-on demander l'aide aux études pour l'enseignement non supérieur cette année ?"
+    code: GV000125
+    facts:
+      period: ['15 juillet( 2026)?', '15/0?7/2026', '15 de juliol']
+  - id: discounted-electricity
+    lang: ca
+    question: "Tinc pocs ingressos i voldria pagar menys llum. Puc demanar la tarifa elèctrica bonificada en línia? Té cost?"
+    code: GV000054
+    facts:
+      price: ['(?<![\d,.])0([,.]00)?\s*(€|euros?)', 'gratu[iï]t', 'sense cost', 'no t[eé] (cap )?cost', 'cap cost']
+      online: ['en l[ií]nia', 'online', 'per internet', 'telem[aà]tic']
+  - id: abstain-weather
+    lang: ca
+    expect: abstain
+    question: "Quin temps farà demà a Andorra la Vella?"
+  - id: abstain-ski-pass
+    lang: fr
+    expect: abstain
+    question: "Combien coûte un forfait de ski de saison à Grandvalira cet hiver ?"
+  - id: abstain-border-queue
+    lang: en
+    expect: abstain
+    question: "How long is the queue at the Pas de la Casa border right now?"
+  - id: abstain-minister-phone
+    lang: es
+    expect: abstain
+    question: "¿Cuál es el número de móvil personal del ministro de Finanzas?"
+  - id: abstain-my-vacation
+    lang: ca
+    expect: abstain
+    question: "Quants dies de vacances em queden enguany a la meva empresa?"

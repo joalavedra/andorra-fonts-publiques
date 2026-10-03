@@ -157,6 +157,39 @@ def test_tramits_procedure_parser_detects_online_login_cta(monkeypatch):
     assert result["appointment_required"] is False
 
 
+def test_tramits_procedure_parser_strips_trailing_access_cta(monkeypatch):
+    content = """<!doctype html>
+    <html><body>
+      <h1>Procedure</h1>
+      <h2>Termini de resolució màxim</h2>
+      <p>72 hora/hores. Podeu accedir al tràmit des del següent enllaç</p>
+      <h2>Detall de presentació</h2>
+      <p>Apply online. Puede acceder al trámite desde el siguiente enlace.</p>
+    </body></html>"""
+    parsed = tramits._Page()
+    parsed.feed(content)
+    monkeypatch.setattr(
+        tramits,
+        "_page",
+        lambda path, params=None: (
+            "https://www.e-tramits.ad/tramits/procedure/p/GV000633",
+            content,
+            parsed,
+        ),
+    )
+
+    result = tramits.procedure("https://www.e-tramits.ad/tramits/procedure/p/GV000633")
+
+    assert result["max_resolution"] == "72 hora/hores."
+    assert result["sections"]["Termini de resolució màxim"] == "72 hora/hores."
+    assert result["sections"]["Detall de presentació"] == "Apply online."
+    for cta in (
+        "Vous pouvez accéder à la démarche depuis le lien suivant",
+        "You can access the procedure from the following link",
+    ):
+        assert tramits._clean_access_cta(f"Details. {cta}") == "Details."
+
+
 def test_tramits_list_all_uses_stable_sort_until_total(monkeypatch, tmp_path):
     pages = {
         0: [{"code": "GV000001", "title": "A", "url": "https://example.ad/a"},
