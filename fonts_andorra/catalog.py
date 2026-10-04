@@ -18,7 +18,7 @@ def _source_files() -> list[Path]:
 
 
 def load_catalog(path: str | Path | None = None) -> dict:
-    if path is not None:
+    if path:
         return json.loads(Path(path).read_text(encoding="utf-8"))
     catalog_path = ROOT / "catalog.json"
     if catalog_path.exists():
