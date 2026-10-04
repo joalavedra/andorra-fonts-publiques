@@ -22,16 +22,29 @@ def load_sources() -> list[dict]:
     ]
 
 
+SECTORS_CA = {
+    "legislation": "Legislació i butlletins oficials",
+    "statistics": "Estadística oficial",
+    "geography": "Geografia i cartografia",
+    "energy": "Energia i carburants",
+    "public-services": "Serveis públics i tràmits",
+    "parliament": "Parlament i informació cívica",
+    "finance": "Finances i regulació",
+    "meteorology": "Meteorologia i clima",
+    "social-security": "Seguretat social",
+    "transparency": "Transparència i administració pública",
+}
+
+
 def source_table(sources: list[dict]) -> str:
     rows = [
-        "| ID | Source | Sector | Access | Licence |",
-        "|---|---|---|---|---|",
+        "| ID | Font | Sector | Accés |",
+        "|---|---|---|---|",
     ]
     for source in sources:
-        license_text = source["license"].replace("|", "\\|")
         rows.append(
             f"| `{source['id']}` | [{source['name']}]({source['base_url']}) | "
-            f"{source['sector']} | {', '.join(source['access'])} | {license_text} |"
+            f"{SECTORS_CA[source['sector']]} | {', '.join(source['access'])} |"
         )
     return "\n".join(rows)
 
