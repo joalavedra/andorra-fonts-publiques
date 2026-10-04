@@ -50,6 +50,29 @@ The MCP server communicates over stdio. Configure Claude Desktop, Claude Code or
 }
 ```
 
+## Install the MCP server
+
+Run the published server with `uvx`:
+
+```bash
+uvx fonts-andorra
+```
+
+Claude Desktop configuration:
+
+```json
+{
+  "mcpServers": {
+    "andorra": {
+      "command": "uvx",
+      "args": ["fonts-andorra"]
+    }
+  }
+}
+```
+
+<!-- mcp-name: io.github.joalavedra/andorra-fonts-publiques -->
+
 Ask a cited question using Gemini REST. Set `GEMINI_API_KEY` in the environment; it is never stored in this repository:
 
 ```bash

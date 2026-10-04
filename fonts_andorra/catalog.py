@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import unicodedata
+from importlib.resources import files
 from pathlib import Path
 
 import yaml
@@ -17,9 +18,14 @@ def _source_files() -> list[Path]:
 
 
 def load_catalog(path: str | Path | None = None) -> dict:
-    catalog_path = Path(path) if path else ROOT / "catalog.json"
+    if path:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    catalog_path = ROOT / "catalog.json"
     if catalog_path.exists():
         return json.loads(catalog_path.read_text(encoding="utf-8"))
+    package_catalog = files("fonts_andorra").joinpath("data").joinpath("catalog.json")
+    if package_catalog.is_file():
+        return json.loads(package_catalog.read_text(encoding="utf-8"))
     sources = []
     for source_path in _source_files():
         sources.append(yaml.safe_load(source_path.read_text(encoding="utf-8")))
