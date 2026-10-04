@@ -26,6 +26,7 @@ STOPWORDS = {
 SKIPPED_PATH_SEGMENTS = {
     "ca", "tematiques", "ministeris-i-secretaries-d-estat",
 }
+ION_SUFFIXES = ("iones", "ions", "ion")
 
 
 def tokenize(value: str) -> list[str]:
@@ -35,11 +36,15 @@ def tokenize(value: str) -> list[str]:
 
 
 def _stem(token: str) -> str:
+    for suffix in ION_SUFFIXES:
+        if token.endswith(suffix) and len(token) > len(suffix) + 2:
+            token = token[: -len(suffix)] + "io"
+            break
     if len(token) > 4 and token.endswith("s"):
         token = token[:-1]
     if len(token) > 4 and token[-1] in "aeo":
         token = token[:-1]
-    return token[:8]
+    return token[:10]
 
 
 @lru_cache(maxsize=1)
