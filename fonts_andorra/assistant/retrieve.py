@@ -16,6 +16,13 @@ from fonts_andorra.clients import bopa, govern, tramits
 
 logger = logging.getLogger(__name__)
 
+AMOUNT_QUESTION_RE = re.compile(
+    r"\b(preu|cost|costa|import|taxa|quant|quanta|quin preu|termini|"
+    r"quant temps|dies|mesos|anys|ingressos|salari|price|cost|fee|"
+    r"how much|how long|income|precio|cuanto|cuesta|plazo|ingresos|"
+    r"prix|combien|delai|revenus|%)\b"
+)
+
 
 @dataclass
 class Source:
@@ -87,7 +94,12 @@ def _procedure_passage(detail: dict, fallback_title: str = "", max_chars: int = 
     return f"{header}\n{body[:max_chars - len(header) - 1]}"
 
 
-def _govern_chunk_score(heading: str, chunk: str, query_terms: set[str]) -> int:
+def _govern_chunk_score(
+    heading: str,
+    chunk: str,
+    query_terms: set[str],
+    question: str = "",
+) -> int:
     heading_terms = set(index.tokenize(heading))
     chunk_terms = set(index.tokenize(chunk))
     normalized = normalize(chunk)
@@ -97,8 +109,9 @@ def _govern_chunk_score(heading: str, chunk: str, query_terms: set[str]) -> int:
         normalized,
         re.IGNORECASE,
     ))
+    asks_about_amount = not question or bool(AMOUNT_QUESTION_RE.search(normalize(question)))
     return len(query_terms & chunk_terms) + 2 * len(query_terms & heading_terms) + 3 * int(
-        has_amount or has_duration
+        (has_amount or has_duration) and asks_about_amount
     )
 
 
@@ -137,7 +150,12 @@ def _govern_chunks(text: str, max_chars: int = 400) -> list[str]:
     return chunks
 
 
-def _govern_passage(detail: dict, query: str, max_chars: int = 4000) -> str:
+def _govern_passage(
+    detail: dict,
+    query: str,
+    question: str = "",
+    max_chars: int = 4000,
+) -> str:
     lines = [f"Title: {detail.get('title') or 'Govern d’Andorra page'}"]
     description = detail.get("description", "")
     if description:
@@ -145,12 +163,12 @@ def _govern_passage(detail: dict, query: str, max_chars: int = 4000) -> str:
     header = "\n".join(lines)
     if len(header) >= max_chars:
         return header[:max_chars]
-    query_terms = set(index.tokenize(query))
+    query_terms = set(index.tokenize(query)) | set(index.tokenize(question))
     chunks = []
     for section_order, (heading, text) in enumerate(detail.get("sections", {}).items()):
         for chunk_order, chunk in enumerate(_govern_chunks(text)):
             chunks.append((
-                -_govern_chunk_score(heading, chunk, query_terms),
+                -_govern_chunk_score(heading, chunk, query_terms, question),
                 section_order,
                 chunk_order,
                 heading,
@@ -158,9 +176,18 @@ def _govern_passage(detail: dict, query: str, max_chars: int = 4000) -> str:
             ))
     chunks.sort(key=lambda item: item[:3])
 
+    best_by_section = {}
+    for chunk in chunks:
+        best_by_section.setdefault(chunk[1], chunk)
+    first_pass = list(best_by_section.values())
+    first_pass_keys = {(item[1], item[2]) for item in first_pass}
+    selection_order = first_pass + [
+        item for item in chunks if (item[1], item[2]) not in first_pass_keys
+    ]
+
     selected: dict[int, tuple[str, list[tuple[int, str]]]] = {}
     used = len(header)
-    for _, section_order, chunk_order, heading, chunk in chunks:
+    for _, section_order, chunk_order, heading, chunk in selection_order:
         current = selected.get(section_order)
         cost = len(" … ") + len(chunk) if current else len(heading) + 3 + len(chunk) + 1
         if used + cost > max_chars:
@@ -255,7 +282,7 @@ def retrieve(question: str) -> list[Source]:
             logger.debug("Govern page retrieval failed: %s", exc)
             continue
         title = detail.get("title") or item.get("title") or "Govern d’Andorra page"
-        passage = _govern_passage(detail, govern_query)
+        passage = _govern_passage(detail, govern_query, safe_question)
         retrieved.append(Source(len(retrieved) + 1, title, detail["url"], passage))
     if re.search(
         r"\b(law|legal|regulation|reglament|regulacion|llei|ley|loi|decret|decreto|normativa)\b",

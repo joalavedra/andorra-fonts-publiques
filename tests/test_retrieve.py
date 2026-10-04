@@ -1,6 +1,10 @@
+from pathlib import Path
+
 import pytest
 
 from fonts_andorra.assistant import retrieve
+
+FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def test_local_procedure_index_ranks_title_and_slug_overlap(monkeypatch):
@@ -262,6 +266,26 @@ def test_govern_passage_keeps_a_late_amount_sentence_and_is_deterministic():
     assert "300% of the minimum wage" in first
     assert len(first) <= 4000
     assert first == second
+
+
+def test_govern_passage_includes_lost_passport_section_for_lost_passport_question():
+    html = (FIXTURES / "govern_passaports.html").read_text(encoding="utf-8")
+    parser = retrieve.govern._Page()
+    parser.feed(html)
+    detail = {
+        "title": parser.title,
+        "description": parser.description,
+        "sections": parser.sections,
+    }
+
+    passage = retrieve._govern_passage(
+        detail,
+        "passaport",
+        "I lost my passport abroad, who do I contact? he perdut el passaport a l'estranger",
+    )
+
+    assert "Pèrdua o robatori:" in passage
+    assert "Ambaixada d'Andorra" in passage
 
 
 def test_govern_search_uses_safe_question_when_keywords_are_empty(monkeypatch):
