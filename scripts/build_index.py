@@ -63,6 +63,8 @@ def build() -> dict:
                 "url": final_url,
                 "headings": list(page["sections"]),
             }
+    if len(kept_by_url) < 800:
+        raise RuntimeError(f"govern.ad index contains only {len(kept_by_url)} pages; expected at least 800")
     items.extend(kept_by_url.values())
     items.sort(key=lambda item: (item["source"], item["url"]))
     index = {
