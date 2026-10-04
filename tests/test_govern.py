@@ -13,13 +13,19 @@ def test_govern_page_parses_title_description_and_liferay_sections(monkeypatch):
     class Response:
         url = "https://www.govern.ad/ca/ministeris-i-secretaries-d-estat/ministeri-de-justicia-i-interior/passaports"
         text = html
+        is_redirect = False
 
         def raise_for_status(self):
             return None
 
-    monkeypatch.setattr(govern.http, "get", lambda url: Response())
+        @property
+        def headers(self):
+            return {}
+
+    monkeypatch.setattr(govern.http, "get", lambda url, **kwargs: Response())
     result = govern.page(Response.url)
 
+    assert result["url"] == Response.url
     assert result["title"] == "Passaports"
     assert "requisits" in result["description"].lower()
     assert result["lang"] == "ca"
@@ -28,9 +34,68 @@ def test_govern_page_parses_title_description_and_liferay_sections(monkeypatch):
 
 
 def test_govern_page_rejects_non_govern_urls(monkeypatch):
-    monkeypatch.setattr(govern.http, "get", lambda url: pytest.fail("unexpected request"))
+    monkeypatch.setattr(govern.http, "get", lambda url, **kwargs: pytest.fail("unexpected request"))
     with pytest.raises(ValueError, match="https://www.govern.ad"):
         govern.page("https://example.com/ca/page")
+
+
+def test_govern_page_follows_same_host_relative_redirect(monkeypatch):
+    final_url = "https://www.govern.ad/ca/final"
+    requested = []
+
+    class Redirect:
+        is_redirect = True
+
+        @property
+        def headers(self):
+            return {"Location": "/ca/final"}
+
+    class Response:
+        is_redirect = False
+        text = '<html lang="ca"><title>Final</title></html>'
+
+        @property
+        def headers(self):
+            return {}
+
+        def raise_for_status(self):
+            return None
+
+    def get(url, **kwargs):
+        requested.append((url, kwargs))
+        return Redirect() if len(requested) == 1 else Response()
+
+    monkeypatch.setattr(govern.http, "get", get)
+
+    result = govern.page("https://www.govern.ad/ca/start")
+
+    assert result["url"] == final_url
+    assert requested == [
+        ("https://www.govern.ad/ca/start", {"allow_redirects": False}),
+        (final_url, {"allow_redirects": False}),
+    ]
+
+
+def test_govern_page_rejects_offsite_redirect_before_request(monkeypatch):
+    requested = []
+
+    class Redirect:
+        is_redirect = True
+
+        @property
+        def headers(self):
+            return {"Location": "https://evil.example/x"}
+
+    def get(url, **kwargs):
+        requested.append(url)
+        return Redirect()
+
+    monkeypatch.setattr(govern.http, "get", get)
+
+    with pytest.raises(ValueError, match="redirected outside"):
+        govern.page("https://www.govern.ad/ca/start")
+
+    assert requested == ["https://www.govern.ad/ca/start"]
 
 
 def test_govern_parser_merges_duplicate_headings_and_keeps_nested_text_separate():

@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from fonts_andorra.clients import http
 
@@ -136,18 +136,25 @@ def page(url: str) -> dict:
     """Fetch one Govern page and extract its titled content sections."""
     if not _valid_govern_url(url):
         raise ValueError("url must use https://www.govern.ad")
-    response = http.get(url)
+    current = url
+    for _ in range(5):
+        response = http.get(current, allow_redirects=False)
+        if not response.is_redirect:
+            break
+        next_url = urljoin(current, response.headers["Location"])
+        if not _valid_govern_url(next_url):
+            raise ValueError("Govern page redirected outside https://www.govern.ad")
+        current = next_url
+    else:
+        raise ValueError("too many redirects")
     response.raise_for_status()
-    final_url = response.url
-    if not _valid_govern_url(final_url):
-        raise ValueError("Govern page redirected outside https://www.govern.ad")
     parser = _Page()
     parser.feed(response.text)
     title = parser.title or parser.og_title
     title = TITLE_SUFFIX_RE.sub("", title).strip()
-    lang = parser.lang.split("-", 1)[0].lower() or urlparse(final_url).path.strip("/").split("/", 1)[0]
+    lang = parser.lang.split("-", 1)[0].lower() or urlparse(current).path.strip("/").split("/", 1)[0]
     return {
-        "url": final_url,
+        "url": current,
         "title": title,
         "description": " ".join(parser.description.split()),
         "lang": lang,
