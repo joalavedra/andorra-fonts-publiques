@@ -2,9 +2,19 @@ from fonts_andorra import index
 
 
 def test_token_stemming_merges_inflections_without_conflating_words():
+    assert index.tokenize("expedició") == index.tokenize("expedicions")
+    assert index.tokenize("expedició") == index.tokenize("expediciones")
     assert index.tokenize("nòmades") == index.tokenize("nòmada")
+    assert index.tokenize("nacionalitat") == index.tokenize("nacionalitats")
     assert index.tokenize("expedició") != index.tokenize("expedient")
+    assert index.tokenize("nacionalitat") != index.tokenize("nacional")
     assert index.tokenize("passaports") == index.tokenize("passaport")
+
+
+def test_committed_index_search_finds_nationality_page():
+    results = index.search("nacionalitat andorra", limit=3, source="govern.ad")
+
+    assert any("nacionalitat" in item["url"] for item in results)
 
 
 def test_bm25_search_uses_title_headings_and_source_filter(monkeypatch):
