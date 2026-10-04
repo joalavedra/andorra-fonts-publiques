@@ -11,6 +11,7 @@ Educational catalog; live endpoints, reuse notes, known traps and example calls.
 | `consell-general-feeds` | Consell General news feeds | parliament | RSS and Atom feeds for live parliamentary news and legislative tracking. |
 | `e-tramits` | e-tramits procedures | public-services | Searchable HTML catalog of 645 administrative procedures in Catalan, Spanish and French. |
 | `estadistica-api` | Andorra Department of Statistics API | statistics | Public API for 2,709 statistical tables with search, topic groups, JSON-stat data, CSV, XLSX and SDMX exports. |
+| `govern-ad` | Govern d'Andorra information pages | public-services | Liferay information pages from Govern d'Andorra, indexed by section headings and fetched live for cited content. |
 | `meteo-ad` | meteo.ad station charts | meteorology | HTML station chart pages embed recent Highcharts categories and series. |
 | `sig-arcgis` | Govern d'Andorra ArcGIS Enterprise | geography | ArcGIS REST catalog with curated fuel, traffic, weather, street, population, tourism, bus and parish layers. |
 | `transparencia` | Transparency portal | transparency | HTML portal linking to procurement, plans, grants, budgets, public entities, inventories and agreements. |

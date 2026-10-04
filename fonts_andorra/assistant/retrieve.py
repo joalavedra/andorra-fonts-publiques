@@ -1,4 +1,4 @@
-"""Retrieve official procedure and bulletin passages for a question."""
+"""Retrieve official procedure, Govern page, and bulletin passages for a question."""
 
 from __future__ import annotations
 
@@ -8,10 +8,11 @@ from dataclasses import dataclass
 
 import requests
 
+from fonts_andorra import index
 from fonts_andorra.assistant import llm
 from fonts_andorra.assistant.redact import redact
 from fonts_andorra.catalog import normalize
-from fonts_andorra.clients import bopa, tramits
+from fonts_andorra.clients import bopa, govern, tramits
 
 logger = logging.getLogger(__name__)
 
@@ -86,17 +87,107 @@ def _procedure_passage(detail: dict, fallback_title: str = "", max_chars: int = 
     return f"{header}\n{body[:max_chars - len(header) - 1]}"
 
 
+def _govern_chunk_score(heading: str, chunk: str, query_terms: set[str]) -> int:
+    heading_terms = set(index.tokenize(heading))
+    chunk_terms = set(index.tokenize(chunk))
+    normalized = normalize(chunk)
+    has_amount = bool(re.search(r"€|\beuros?\b|%", normalized, re.IGNORECASE))
+    has_duration = bool(re.search(
+        r"\b\d+(?:[.,]\d+)?\s*(?:anys?|dies?|mesos?|hores?|years?|days?|months?)\b",
+        normalized,
+        re.IGNORECASE,
+    ))
+    return len(query_terms & chunk_terms) + 2 * len(query_terms & heading_terms) + 3 * int(
+        has_amount or has_duration
+    )
+
+
+def _govern_chunks(text: str, max_chars: int = 400) -> list[str]:
+    sentences = re.split(r"(?<=[.;:])\s+", text.strip())
+    segments = []
+    for sentence in sentences:
+        if len(sentence) <= max_chars:
+            segments.append(sentence)
+            continue
+        words = sentence.split()
+        segment = ""
+        for word in words:
+            pieces = [word[index:index + max_chars] for index in range(0, len(word), max_chars)]
+            for piece in pieces:
+                candidate = f"{segment} {piece}".strip()
+                if segment and len(candidate) > max_chars:
+                    segments.append(segment)
+                    segment = piece
+                else:
+                    segment = candidate
+        if segment:
+            segments.append(segment)
+
+    chunks = []
+    current = ""
+    for segment in segments:
+        candidate = f"{current} {segment}".strip()
+        if current and len(candidate) > max_chars:
+            chunks.append(current)
+            current = segment
+        else:
+            current = candidate
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def _govern_passage(detail: dict, query: str, max_chars: int = 4000) -> str:
+    lines = [f"Title: {detail.get('title') or 'Govern d’Andorra page'}"]
+    description = detail.get("description", "")
+    if description:
+        lines.append(f"Description: {description[:1500]}")
+    header = "\n".join(lines)
+    if len(header) >= max_chars:
+        return header[:max_chars]
+    query_terms = set(index.tokenize(query))
+    chunks = []
+    for section_order, (heading, text) in enumerate(detail.get("sections", {}).items()):
+        for chunk_order, chunk in enumerate(_govern_chunks(text)):
+            chunks.append((
+                -_govern_chunk_score(heading, chunk, query_terms),
+                section_order,
+                chunk_order,
+                heading,
+                chunk,
+            ))
+    chunks.sort(key=lambda item: item[:3])
+
+    selected: dict[int, tuple[str, list[tuple[int, str]]]] = {}
+    used = len(header)
+    for _, section_order, chunk_order, heading, chunk in chunks:
+        current = selected.get(section_order)
+        cost = len(" … ") + len(chunk) if current else len(heading) + 3 + len(chunk) + 1
+        if used + cost > max_chars:
+            continue
+        if current:
+            current[1].append((chunk_order, chunk))
+        else:
+            selected[section_order] = (heading, [(chunk_order, chunk)])
+        used += cost
+
+    passage_lines = [header]
+    for section_order in sorted(selected):
+        heading, section_chunks = selected[section_order]
+        section_chunks.sort(key=lambda item: item[0])
+        passage_lines.append(f"{heading}: " + " … ".join(chunk for _, chunk in section_chunks))
+    return "\n".join(passage_lines)
+
+
 def _rank_candidates(
     items: list[dict],
     keywords: list[str],
-    site_ranks: dict[str, tuple[int, int]] | None = None,
-    fallback_ranks: dict[str, int] | None = None,
+    index_ranks: dict[str, tuple[int, ...]] | None = None,
 ) -> list[dict]:
     terms = set()
     for keyword in llm.clean_keywords(keywords):
         terms.update(_tokens(keyword))
-    site_ranks = site_ranks or {}
-    fallback_ranks = fallback_ranks or {}
+    index_ranks = index_ranks or {}
     ranked = []
     for item_order, item in enumerate(items):
         code = item.get("code", "")
@@ -105,23 +196,13 @@ def _rank_candidates(
             any(_token_matches(term, candidate_term) for candidate_term in candidate)
             for term in terms
         )
-        if code in site_ranks:
-            priority = (0, *site_ranks[code])
+        if code in index_ranks:
+            priority = (0, *index_ranks[code])
         else:
-            priority = (1, fallback_ranks.get(code, item_order), item_order)
+            priority = (1, item_order)
         ranked.append((-overlap, *priority, code, item))
     ranked.sort(key=lambda entry: entry[:-1])
     return [entry[-1] for entry in ranked]
-
-
-def _fallback(keywords: list[str]) -> list[dict]:
-    if not llm.clean_keywords(keywords):
-        return []
-    try:
-        items = tramits.list_all()
-    except (requests.RequestException, RuntimeError, ValueError):
-        return []
-    return _rank_candidates(items, keywords)[:8]
 
 
 def retrieve(question: str) -> list[Source]:
@@ -132,31 +213,25 @@ def retrieve(question: str) -> list[Source]:
         keywords = []
     keywords = llm.clean_keywords(keywords)
     candidates: dict[str, dict] = {}
-    site_ranks: dict[str, tuple[int, int]] = {}
-    site_order = 0
+    index_ranks: dict[str, tuple[int, ...]] = {}
+    index_order = 0
     for keyword in keywords[:4]:
         try:
-            for result_rank, item in enumerate(tramits.search(keyword)):
-                code = item.get("code")
+            results = index.search(keyword, limit=8, source="e-tramits")
+            for result_rank, result in enumerate(results):
+                item = dict(result)
+                code = item.get("id") or item.get("code")
                 if not code:
                     continue
+                item["code"] = code
                 candidates.setdefault(code, item)
-                rank = (result_rank, site_order)
-                if code not in site_ranks or rank < site_ranks[code]:
-                    site_ranks[code] = rank
-                site_order += 1
-        except (requests.RequestException, RuntimeError, ValueError) as exc:
-            logger.debug("Procedure search failed: %s", exc)
-            continue
-    fallback_items = _fallback(keywords)
-    fallback_ranks = {}
-    for rank, item in enumerate(fallback_items):
-        code = item.get("code")
-        if not code:
-            continue
-        candidates.setdefault(code, item)
-        fallback_ranks.setdefault(code, rank)
-    scored = _rank_candidates(list(candidates.values()), keywords, site_ranks, fallback_ranks)
+                rank = (result_rank, index_order)
+                if code not in index_ranks or rank < index_ranks[code]:
+                    index_ranks[code] = rank
+                index_order += 1
+        except (RuntimeError, ValueError) as exc:
+            logger.debug("Procedure index search failed: %s", exc)
+    scored = _rank_candidates(list(candidates.values()), keywords, index_ranks)
     retrieved: list[Source] = []
     for item in scored[:5]:
         try:
@@ -167,6 +242,21 @@ def retrieve(question: str) -> list[Source]:
         title = detail.get("title") or item.get("title") or item["code"]
         text = _procedure_passage(detail, title)
         retrieved.append(Source(len(retrieved) + 1, title, detail["url"], text))
+    govern_query = " ".join(keywords) if keywords else safe_question
+    try:
+        govern_items = index.search(govern_query, limit=3, source="govern.ad")
+    except (RuntimeError, ValueError) as exc:
+        logger.debug("Govern index search failed: %s", exc)
+        govern_items = []
+    for item in govern_items:
+        try:
+            detail = govern.page(item["url"])
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Govern page retrieval failed: %s", exc)
+            continue
+        title = detail.get("title") or item.get("title") or "Govern d’Andorra page"
+        passage = _govern_passage(detail, govern_query)
+        retrieved.append(Source(len(retrieved) + 1, title, detail["url"], passage))
     if re.search(
         r"\b(law|legal|regulation|reglament|regulacion|llei|ley|loi|decret|decreto|normativa)\b",
         normalize(question),

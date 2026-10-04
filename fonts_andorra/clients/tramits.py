@@ -127,11 +127,12 @@ def _page(path: str, params: dict | None = None):
 
 
 def _search_page(text: str, page: int, stable_sort: bool = False):
-    params = {"page": page}
     if stable_sort:
-        params["q"] = ":name-asc"
+        params = {"q": ":name-asc", "page": page}
     else:
-        params["text"] = text
+        params = {"text": text}
+        if page:
+            params["page"] = page
     url, _, parsed = _page(SEARCH_URL, params)
     total_match = TOTAL_RE.search(" ".join(parsed.total_text))
     total = int(total_match.group(1).replace(".", "").replace(",", "")) if total_match else None

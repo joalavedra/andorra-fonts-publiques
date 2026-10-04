@@ -21,6 +21,9 @@ fonts-andorra-ask = "fonts_andorra.assistant.cli:main"
 [tool.setuptools.packages.find]
 include = ["fonts_andorra*"]
 
+[tool.setuptools.package-data]
+fonts_andorra = ["data/index.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

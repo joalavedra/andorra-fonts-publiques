@@ -28,7 +28,8 @@ def test_stdio_server_lists_tools():
     names = asyncio.run(check())
     assert {
         "search_catalog", "source", "bopa_search", "bopa_document", "stats_search",
-        "stats_data", "tramits_search", "tramit", "geo_query", "feed_latest",
+        "stats_data", "tramits_search", "tramit", "govern_search", "govern_page",
+        "geo_query", "feed_latest",
     } <= names
 
 
@@ -48,3 +49,36 @@ def test_tramit_exposes_application_period(monkeypatch):
     result = json.loads(mcp_server.tramit("GV000484"))
 
     assert result["application_period"] == "Tot l’any."
+
+
+def test_govern_search_uses_only_local_govern_index(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        mcp_server.index,
+        "search",
+        lambda query, limit, source: calls.append((query, limit, source)) or [{"title": "Passport"}],
+    )
+
+    result = json.loads(mcp_server.govern_search("passport", 4))
+
+    assert result == {"items": [{"title": "Passport"}]}
+    assert calls == [("passport", 4, "govern.ad")]
+
+
+def test_govern_page_truncates_sections(monkeypatch):
+    monkeypatch.setattr(
+        mcp_server.govern,
+        "page",
+        lambda url: {
+            "url": url,
+            "title": "Passport",
+            "description": "Description",
+            "lang": "ca",
+            "sections": {"Import": "i" * 5000, "Renewal": "r" * 1000},
+        },
+    )
+
+    result = json.loads(mcp_server.govern_page("https://www.govern.ad/ca/passport", max_chars=5000))
+
+    assert len(result["sections"]["Import"]) == 4000
+    assert len(result["sections"]["Renewal"]) == 1000

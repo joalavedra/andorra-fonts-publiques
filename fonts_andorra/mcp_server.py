@@ -8,8 +8,8 @@ import json
 
 from mcp.server.fastmcp import FastMCP
 
-from fonts_andorra import catalog
-from fonts_andorra.clients import arcgis, bopa, estadistica, feeds, tramits
+from fonts_andorra import catalog, index
+from fonts_andorra.clients import arcgis, bopa, estadistica, feeds, govern, tramits
 
 server = FastMCP("andorra-fonts-publiques")
 
@@ -126,6 +126,35 @@ def tramit(code: str, lang: str = "ca") -> str:
             remaining -= len(excerpt)
         detail["sections"] = sections
         detail["documents"] = detail["documents"][:20]
+        return _json(detail)
+    except Exception as exc:
+        return _json({"error": str(exc)})
+
+
+@server.tool()
+def govern_search(text: str, limit: int = 10) -> str:
+    """Search Govern pages in the committed local index."""
+    try:
+        items = index.search(text, max(0, min(limit, 50)), source="govern.ad")
+        return _json({"items": items})
+    except Exception as exc:
+        return _json({"error": str(exc)})
+
+
+@server.tool()
+def govern_page(url: str, max_chars: int = 12000) -> str:
+    """Fetch one live Govern page and excerpt its sections."""
+    try:
+        detail = govern.page(url)
+        sections = {}
+        remaining = max(0, min(max_chars, 50000))
+        for heading, text in detail["sections"].items():
+            if remaining <= 0:
+                break
+            excerpt = text[:min(4000, remaining)]
+            sections[heading] = excerpt
+            remaining -= len(excerpt)
+        detail["sections"] = sections
         return _json(detail)
     except Exception as exc:
         return _json({"error": str(exc)})

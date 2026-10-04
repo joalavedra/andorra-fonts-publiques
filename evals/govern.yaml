@@ -1,0 +1,58 @@
+# govern.ad information-page cases: written before govern.ad retrieval existed and never used to tune it.
+# Report the first run as-is; fix the system on new cases, not by editing these.
+# Ground truth taken from the live govern.ad pages on 2026-10-03. `url` is a regex the cited source URL must match
+# (used instead of `code` because these answers live on govern.ad pages, not e-tramits procedures).
+version: 2026-10-03
+cases:
+  - id: passport-price
+    lang: en
+    question: "How much does an Andorran passport cost?"
+    url: 'govern\.ad/.*passaport'
+    facts:
+      ten_year: ['49[,.]31']
+      five_year: ['32[,.]16']
+  - id: digital-nomad-residence
+    lang: en
+    question: "I work remotely for a foreign company. With Andorra's digital nomad residence, how many days a year do I have to live there and how long is the first permit valid?"
+    url: 'govern\.ad/.*nomada-digital'
+    facts:
+      days: ['90\s*(dies|days|días|dias|jours)']
+      period: ['(2|two|dos|deux)\s*(anys|years|años|anos|ans)']
+  - id: passive-residence-income
+    lang: es
+    question: "Quiero vivir en Andorra sin trabajar. ¿Qué ingresos anuales me piden para la residencia sin trabajo?"
+    url: 'govern\.ad/.*residencia-sense-treball'
+    facts:
+      income: ['300\s*%']
+      dependant: ['100\s*%']
+  - id: non-resident-tax-rate
+    lang: fr
+    question: "Je suis consultant non résident et je facture une prestation à une entreprise andorrane. Quel est le taux de l'impôt sur le revenu des non-résidents ?"
+    url: 'govern\.ad/.*no-residents'
+    facts:
+      rate: ['10\s*%']
+  - id: customs-allowance
+    lang: en
+    question: "How many cigarettes can I take back to the EU from Andorra without paying duty, and what is the value limit for other industrial products?"
+    url: 'govern\.ad/.*franquicies'
+    facts:
+      cigarettes: ['300\s*(cigarrets|cigarettes|cigarrillos)']
+      industrial: ['900']
+  - id: nationality-by-marriage
+    lang: ca
+    question: "Estic casat amb una andorrana. Quants anys de residència necessito per demanar la nacionalitat?"
+    url: 'govern\.ad/.*nacionalitat'
+    facts:
+      years: ['(5|cinc|five|cinco|cinq)\s*(anys|years|años|ans)']
+  - id: nationality-naturalisation
+    lang: es
+    question: "No he estudiado en Andorra. ¿Cuántos años de residencia necesito para obtener la nacionalidad andorrana por naturalización?"
+    url: 'govern\.ad/.*nacionalitat'
+    facts:
+      years: ['(20|vint|twenty|veinte|vingt)\s*(anys|years|años|ans)']
+  - id: passport-lost-abroad
+    lang: fr
+    question: "J'ai perdu mon passeport andorran pendant un voyage à l'étranger. À qui dois-je m'adresser ?"
+    url: 'govern\.ad/.*passaport'
+    facts:
+      embassy: ['ambaixada|embassy|embajada|ambassade']

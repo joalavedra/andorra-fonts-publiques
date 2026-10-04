@@ -105,7 +105,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     sys.path.insert(0, str(ROOT))
-    from fonts_andorra.clients import arcgis, bopa, estadistica, feeds, http, tramits
+    from fonts_andorra import index as local_index
+    from fonts_andorra.clients import arcgis, bopa, estadistica, feeds, govern, http, tramits
 
     if not args.no_fixtures:
         http.session.hooks.setdefault("response", []).append(_capture)
@@ -154,6 +155,34 @@ def main(argv: list[str] | None = None) -> int:
         }, ensure_ascii=False)
     for lang in ("es", "fr"):
         run(f"tramits.GV000484 {lang} URL", lambda lang=lang: tramits.procedure("GV000484", lang)["url"])
+
+    def check_govern_passports():
+        result = govern.page(
+            "https://www.govern.ad/ca/ministeris-i-secretaries-d-estat/"
+            "ministeri-de-justicia-i-interior/passaports"
+        )
+        if len(result["sections"]) < 3:
+            raise AssertionError(f"passport page parsed only {len(result['sections'])} sections")
+        return {
+            "url": result["url"],
+            "title": result["title"],
+            "section_count": len(result["sections"]),
+        }
+
+    run("govern.page(passaports)", check_govern_passports)
+
+    def check_local_index():
+        items = local_index._load_index().get("items", [])
+        counts = {
+            source: sum(item.get("source") == source for item in items)
+            for source in ("e-tramits", "govern.ad")
+        }
+        if counts["e-tramits"] < 600 or counts["govern.ad"] < 800:
+            raise AssertionError(f"committed index is undersized: {counts}")
+        return counts
+
+    run("local index item counts", check_local_index)
+
     for feed_key in ("consell-general", "afa"):
         items = run(f"feed {feed_key}", lambda feed_key=feed_key: feeds.latest(feed_key, 3))
         if items:

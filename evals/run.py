@@ -1,8 +1,8 @@
 """Score the cited assistant on evals/procedures.yaml.
 
 Per case:
-- retrieved: some returned source URL contains the expected procedure code
-- cited: the answer cites [n] for a source whose URL contains the code
+- retrieved: some returned source URL contains the expected procedure code (or matches the `url` regex)
+- cited: the answer cites [n] for a source whose URL contains the code (or matches the `url` regex)
 - facts: every fact matches at least one of its alternative regexes
 - bad_citations: [n] markers with no matching source (must be 0)
 A case passes when retrieved, cited, all facts and no bad citations.
@@ -82,9 +82,13 @@ def score_case(case: dict) -> dict:
                 "pass": abstained and not euro and not bad, "abstained": abstained, "euro_amount": euro,
                 "retrieved": None, "cited": None, "facts": {}, "bad_citations": bad, "secs": secs,
                 "answer": answer, "sources": [{"n": s["n"], "url": s["url"]} for s in sources]}
-    code = case["code"]
-    retrieved = any(code in s["url"] for s in sources)
-    cited = any(n in by_n and code in by_n[n]["url"] for n in cited_ns)
+    code = case.get("code") or case["url"]
+
+    def matches(url: str) -> bool:
+        return bool(re.search(case["url"], url)) if "url" in case else case["code"] in url
+
+    retrieved = any(matches(s["url"]) for s in sources)
+    cited = any(n in by_n and matches(by_n[n]["url"]) for n in cited_ns)
     facts = fact_hits(answer, case["facts"])
     ok = retrieved and cited and all(facts.values()) and not bad
     return {"id": case["id"], "lang": case["lang"], "code": code, "expect": "answer", "pass": ok, "retrieved": retrieved,
