@@ -96,9 +96,18 @@ def _procedure_passage(detail: dict, fallback_title: str = "", max_chars: int = 
         return f"{header}\n{body}" if header else body
 
     min_useful = [
-        min(len(line), len(heading) + 22)
+        min(len(line), len(heading) + 23)
         for (heading, _), line in zip(ordered_sections, lines, strict=True)
     ]
+    eligible = [
+        (line, minimum)
+        for line, minimum in zip(lines, min_useful, strict=True)
+        if minimum <= body_budget
+    ]
+    if not eligible:
+        return header
+    lines = [line for line, _ in eligible]
+    min_useful = [minimum for _, minimum in eligible]
     visible_count = len(lines)
     while visible_count:
         if body_budget < visible_count - 1:

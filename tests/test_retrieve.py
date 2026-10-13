@@ -213,6 +213,57 @@ def test_procedure_passage_matches_balanced_allocation_parity_vector():
 
     assert retrieve._procedure_passage(detail, max_chars=120) == expected
 
+    long_heading = "Descripció " + "D" * 3000
+    edge_detail = {
+        "title": "T",
+        "sections": {
+            long_heading: "short",
+            "Altres": "OK",
+            "Requisits": "r" * 100,
+        },
+    }
+
+    assert retrieve._procedure_passage(edge_detail, max_chars=51) == "Title: T\nAltres: OK"
+
+
+def test_procedure_passage_sweeps_budgets_without_short_truncations():
+    detail = {
+        "title": "T",
+        "sections": {
+            "Descripció": "d" * 400,
+            "Requisits previs del sol·licitant": "r" * 400,
+            "Documentació justificativa requerida": "n" * 400,
+            "Altres condicions aplicables": "x" * 400,
+        },
+    }
+    saw_truncated_line = False
+
+    for max_chars in range(60, 401):
+        passage = retrieve._procedure_passage(detail, max_chars=max_chars)
+        for line in passage.splitlines()[1:]:
+            _, text = line.split(": ", 1)
+            if text.endswith("…"):
+                saw_truncated_line = True
+                assert len(text[:-1]) >= 20, (max_chars, line)
+
+    assert saw_truncated_line
+
+
+def test_procedure_passage_skips_impossible_first_section():
+    long_heading = "Descripció " + "D" * 3000
+    detail = {
+        "title": "T",
+        "sections": {
+            long_heading: "short",
+            "Requisits": "Ser resident.",
+        },
+    }
+
+    passage = retrieve._procedure_passage(detail, max_chars=2500)
+
+    assert "Requisits: Ser resident." in passage
+    assert long_heading not in passage
+
 
 def test_procedure_passage_handles_many_short_sections():
     detail = {
