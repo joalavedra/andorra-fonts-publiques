@@ -86,12 +86,56 @@ def _procedure_passage(detail: dict, fallback_title: str = "", max_chars: int = 
     ]
     descriptions = [item for item in sections if _is_description_heading(item[0])]
     remaining = [item for item in sections if not _is_description_heading(item[0])]
-    body = "\n".join(f"{heading}: {text}" for heading, text in [*descriptions, *remaining])
+    ordered_sections = [*descriptions, *remaining]
+    lines = [f"{heading}: {text}" for heading, text in ordered_sections]
+    body = "\n".join(lines)
     if not body or len(header) >= max_chars:
         return header
-    if not header:
-        return body[:max_chars]
-    return f"{header}\n{body[:max_chars - len(header) - 1]}"
+    body_budget = max_chars - len(header) - 1 if header else max_chars
+    if len(body) <= body_budget:
+        return f"{header}\n{body}" if header else body
+
+    min_useful = [
+        min(len(line), len(heading) + 22)
+        for (heading, _), line in zip(ordered_sections, lines, strict=True)
+    ]
+    visible_count = len(lines)
+    while visible_count:
+        if body_budget < visible_count - 1:
+            visible_count -= 1
+            continue
+        remaining_chars = body_budget - (visible_count - 1)
+        pending = sorted(range(visible_count), key=lambda index: (len(lines[index]), index))
+        allotments = [0] * visible_count
+        pending_start = 0
+        while pending_start < len(pending):
+            pending_count = len(pending) - pending_start
+            share, remainder = divmod(remaining_chars, pending_count)
+            shortest = pending[pending_start]
+            if len(lines[shortest]) <= share:
+                allotments[shortest] = len(lines[shortest])
+                remaining_chars -= len(lines[shortest])
+                pending_start += 1
+                continue
+            for order, line_index in enumerate(sorted(pending[pending_start:])):
+                allotments[line_index] = share + (order < remainder)
+            break
+        if all(
+            allotment >= min_useful[index]
+            for index, allotment in enumerate(allotments)
+        ):
+            break
+        visible_count -= 1
+    if visible_count == 0:
+        return header
+
+    allocated_lines = []
+    for line, allotment in zip(lines[:visible_count], allotments, strict=True):
+        if allotment < len(line):
+            line = f"{line[:allotment - 1]}…"
+        allocated_lines.append(line)
+    prefix = f"{header}\n" if header else ""
+    return prefix + "\n".join(allocated_lines)
 
 
 def _govern_chunk_score(
