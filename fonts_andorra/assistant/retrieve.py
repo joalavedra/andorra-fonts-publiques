@@ -86,12 +86,40 @@ def _procedure_passage(detail: dict, fallback_title: str = "", max_chars: int = 
     ]
     descriptions = [item for item in sections if _is_description_heading(item[0])]
     remaining = [item for item in sections if not _is_description_heading(item[0])]
-    body = "\n".join(f"{heading}: {text}" for heading, text in [*descriptions, *remaining])
+    lines = [f"{heading}: {text}" for heading, text in [*descriptions, *remaining]]
+    body = "\n".join(lines)
     if not body or len(header) >= max_chars:
         return header
-    if not header:
-        return body[:max_chars]
-    return f"{header}\n{body[:max_chars - len(header) - 1]}"
+    body_budget = max_chars - len(header) - 1 if header else max_chars
+    if len(body) <= body_budget:
+        return f"{header}\n{body}" if header else body
+
+    remaining_chars = body_budget - (len(lines) - 1)
+    pending = sorted(range(len(lines)), key=lambda index: (len(lines[index]), index))
+    allotments = [0] * len(lines)
+    pending_start = 0
+    while pending_start < len(pending):
+        pending_count = len(pending) - pending_start
+        share, remainder = divmod(remaining_chars, pending_count)
+        shortest = pending[pending_start]
+        if len(lines[shortest]) <= share:
+            allotments[shortest] = len(lines[shortest])
+            remaining_chars -= len(lines[shortest])
+            pending_start += 1
+            continue
+        for order, line_index in enumerate(sorted(pending[pending_start:])):
+            allotments[line_index] = share + (order < remainder)
+        break
+
+    allocated_lines = []
+    for line, allotment in zip(lines, allotments, strict=True):
+        if allotment < 2:
+            continue
+        if allotment < len(line):
+            line = f"{line[:allotment - 1]}…"
+        allocated_lines.append(line)
+    prefix = f"{header}\n" if header else ""
+    return prefix + "\n".join(allocated_lines)
 
 
 def _govern_chunk_score(

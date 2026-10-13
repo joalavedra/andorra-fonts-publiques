@@ -158,6 +158,73 @@ def test_procedure_passage_preserves_key_facts_before_long_sections():
     assert len(passage) <= 2500
 
 
+def test_procedure_passage_keeps_fitting_sections_unchanged():
+    detail = {
+        "title": "T",
+        "sections": {
+            "Descripció": "Text",
+            "Requisits": "Ser resident.",
+        },
+    }
+
+    assert retrieve._procedure_passage(detail, max_chars=200) == (
+        "Title: T\n"
+        "Descripció: Text\n"
+        "Requisits: Ser resident."
+    )
+
+
+def test_procedure_passage_fairly_truncates_long_description():
+    detail = {
+        "title": "T",
+        "sections": {
+            "Requisits": "Ser resident.",
+            "Descripció": "d" * 3000,
+            "Documentació": "Passaport vigent.",
+        },
+    }
+
+    passage = retrieve._procedure_passage(detail, max_chars=2500)
+    lines = passage.splitlines()
+
+    assert lines[1].startswith("Descripció: ") and lines[1].endswith("…")
+    assert lines[2:] == [
+        "Requisits: Ser resident.",
+        "Documentació: Passaport vigent.",
+    ]
+    assert len(passage) <= 2500
+
+
+def test_procedure_passage_matches_balanced_allocation_parity_vector():
+    detail = {
+        "title": "T",
+        "sections": {
+            "Descripció": "d" * 100,
+            "Requisits": "r" * 30,
+            "Altres": "x" * 60,
+        },
+    }
+    expected = (
+        "Title: T\n"
+        f"Descripció: {'d' * 24}…\n"
+        f"Requisits: {'r' * 24}…\n"
+        f"Altres: {'x' * 27}…"
+    )
+
+    assert retrieve._procedure_passage(detail, max_chars=120) == expected
+
+
+def test_procedure_passage_handles_many_short_sections():
+    detail = {
+        "title": "T",
+        "sections": {f"Secció {index}": "x" for index in range(200)},
+    }
+
+    passage = retrieve._procedure_passage(detail, max_chars=80)
+
+    assert len(passage) <= 80
+
+
 def test_retrieve_fetches_five_procedures_from_the_index(monkeypatch):
     items = [
         {"code": f"GV00000{index}", "title": "Targeta blava", "url": f"https://example.ad/p/GV00000{index}"}
