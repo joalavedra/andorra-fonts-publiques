@@ -217,12 +217,43 @@ def test_procedure_passage_matches_balanced_allocation_parity_vector():
 def test_procedure_passage_handles_many_short_sections():
     detail = {
         "title": "T",
-        "sections": {f"Secció {index}": "x" for index in range(200)},
+        "sections": {f"Section {index}": "word" for index in range(200)},
     }
 
     passage = retrieve._procedure_passage(detail, max_chars=80)
 
-    assert len(passage) <= 80
+    assert passage == (
+        "Title: T\n"
+        "Section 0: word\n"
+        "Section 1: word\n"
+        "Section 2: word\n"
+        "Section 3: word"
+    )
+
+
+def test_procedure_passage_keeps_minimum_useful_long_heading_sections():
+    headings = [f"Requisits específics del sol·licitant {index}" for index in range(30)]
+    detail = {
+        "title": "T",
+        "sections": {heading: "t" * 100 for heading in headings},
+    }
+
+    passage = retrieve._procedure_passage(detail, max_chars=500)
+    lines = passage.splitlines()
+
+    assert lines[0] == "Title: T"
+    assert len(lines) > 1
+    assert len(passage) <= 500
+    output_headings = []
+    for line in lines[1:]:
+        heading, text = line.split(": ", 1)
+        assert heading in headings
+        output_headings.append(heading)
+        if text.endswith("…"):
+            assert len(text[:-1]) >= 20
+        else:
+            assert text == "t" * 100
+    assert output_headings == sorted(output_headings, key=headings.index)
 
 
 def test_retrieve_fetches_five_procedures_from_the_index(monkeypatch):
